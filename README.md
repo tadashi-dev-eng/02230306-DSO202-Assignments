@@ -241,8 +241,60 @@ spec:
 ```
 ![alt text](assets/task4.png)
 
+## Task 5 : Frontend Tier
+Frontend tier deploys the web user interface (Nginx) and exposes it to your host machine so it can interact with the Task Tracker application from the browser.
 
+1. It deploys the Frontend Web UI (frontend/deployment.yaml) and uses the pre-built image sarojsanyasi/dso202-frontend:1.0. Sets the environment variable BACKEND_URL to point to the internal backend address: http://backend-svc:8080. So when the container starts, an entrypoint script automatically substitutes this BACKEND_URL into the frontend runtime configuration so the browser knows where to direct API requests.
 
+```YAML
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-deployment
+  namespace: dso202-assignment-01
+  labels:
+    tier: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      tier: backend
+  template:
+    metadata:
+      labels:
+        tier: backend
+    spec:
+      containers:
+      - name: backend
+        image: sarojsanyasi/dso202-backend:1.0
+        ports:
+        - containerPort: 8080
+        envFrom:
+        - configMapRef:
+            name: app-config
+        - secretRef:
+            name: app-secret
+```
+2. It exposes the UI externally (frontend/service.yaml) and creates a NodePort Service named frontend-svc. Plus maps internal container port 8080 to a host port accessible outside the Kubernetes cluster, allowing you to access the web application in your browser.
+
+```YAML
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-svc
+  namespace: dso202-assignment-01
+  labels:
+    tier: frontend
+spec:
+  type: NodePort
+  selector:
+    tier: frontend
+  ports:
+  - port: 8080
+    targetPort: 8080
+    # nodePort: 30080 # Add specific nodePort if configured in your kind cluster
+```
+![alt text](assets/task5.png)
 
 ## Task 6: Resource Governance Justification
 
@@ -252,11 +304,40 @@ spec:
 * **LimitRange Justification**:
   * Sets default container requests (`250m` CPU, `256Mi` Memory) and default limits (`500m` CPU, `512Mi` Memory). This prevents any single container missing explicit limits from consuming unbounded node resources.
 
+```YAML
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: ns-quota
+  namespace: dso202-assignment-01
+spec:
+  hard:
+    requests.cpu: "1"
+    requests.memory: 1Gi
+    limits.cpu: "2"
+    limits.memory: 2Gi
 ---
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: ns-limits
+  namespace: dso202-assignment-01
+spec:
+  limits:
+  - default:
+      cpu: 500m
+      memory: 512Mi
+    defaultRequest:
+      cpu: 250m
+      memory: 256Mi
+    type: Container
+```
+![alt text](assets/task6.png)
 
 ## Task 7: Verification & Evidence
 
 ### a. Full CRUD Cycle Demonstration
+
 *Attach terminal transcript or browser screenshots demonstrating task creation, reading, updating, and deletion.*
 
 ```bash
