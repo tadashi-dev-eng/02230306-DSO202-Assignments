@@ -1,0 +1,15 @@
+# environments/dev.yaml - overrides for a development release.
+# Lives OUTSIDE the chart: it belongs to a deployment of the chart, not the chart.
+environment: dev
+backend:
+  logLevel: debug
+database:
+  auth:
+    # Dev convenience: chart creates the Secret from values (stored in the
+    # release record). Never do this for prod.
+    username: postgres
+    password: dev-only-password
+ingress:
+  host: helm-dev.tasktracker.local
+  tlsSecretName: tasktracker-tls
+  sslRedirect: false

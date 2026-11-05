@@ -1,0 +1,31 @@
+$ kubectl get deploy -n dso202-a3-dev -L app.kubernetes.io/environment
+NAME                  READY   UP-TO-DATE   AVAILABLE   AGE   ENVIRONMENT
+backend-deployment    1/1     1            1           85s   dev
+frontend-deployment   1/1     1            1           85s   dev
+$ kubectl get deploy -n dso202-a3-prod -L app.kubernetes.io/environment
+NAME                  READY   UP-TO-DATE   AVAILABLE   AGE   ENVIRONMENT
+backend-deployment    2/2     2            2           84s   prod
+frontend-deployment   2/2     2            2           84s   prod
+$ kubectl get deploy backend-deployment -n dso202-a3-prod -o jsonpath='{.spec.template.spec.containers[0].resources}{"\n"}'
+{"limits":{"cpu":"1","memory":"384Mi"},"requests":{"cpu":"200m","memory":"192Mi"}}
+$ kubectl get ingress -A -l app.kubernetes.io/part-of=task-tracker -o custom-columns='NAMESPACE:.metadata.namespace,HOST:.spec.rules[0].host,SSL-REDIRECT:.metadata.annotations.nginx\.ingress\.kubernetes\.io/ssl-redirect,BODY-SIZE:.metadata.annotations.nginx\.ingress\.kubernetes\.io/proxy-body-size,OWNER:.metadata.annotations.dso202\.io/owner'
+NAMESPACE        HOST                     SSL-REDIRECT   BODY-SIZE   OWNER
+dso202-a3-dev    dev.tasktracker.local    <none>         1m          <none>
+dso202-a3-prod   prod.tasktracker.local   true           512k        platform-team
+$ kubectl get configmap -A -l app.kubernetes.io/part-of=task-tracker -o custom-columns='NAMESPACE:.metadata.namespace,NAME:.metadata.name,CORS_ORIGIN:.data.CORS_ORIGIN,LOG_LEVEL:.data.LOG_LEVEL' | grep -v db-config
+NAMESPACE        NAME                    CORS_ORIGIN                      LOG_LEVEL
+dso202-a3-dev    app-config-6d87g92896   https://dev.tasktracker.local    info
+dso202-a3-prod   app-config-cdfgthttdk   https://prod.tasktracker.local   warn
+$ kubectl describe resourcequota ns-quota -n dso202-a3-prod | tail -n +3
+Resource                Used    Hard
+--------                ----    ----
+limits.cpu              3400m   6
+limits.memory           1536Mi  4Gi
+persistentvolumeclaims  1       2
+pods                    5       12
+requests.cpu            750m    2
+requests.memory         768Mi   2Gi
+requests.storage        2Gi     3Gi
+services                3       4
+services.loadbalancers  0       0
+services.nodeports      0       0

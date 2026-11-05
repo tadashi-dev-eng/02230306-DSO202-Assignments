@@ -1,0 +1,28 @@
+$ kubectl get pods,pvc,ingress -n dso202-a3-dev
+NAME                                      READY   STATUS    RESTARTS   AGE
+pod/backend-deployment-b749c467f-5l2c4    1/1     Running   0          74s
+pod/db-0                                  1/1     Running   0          74s
+pod/frontend-deployment-69655c685-284bd   1/1     Running   0          74s
+
+NAME                              STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
+persistentvolumeclaim/data-db-0   Bound    pvc-400f80a4-02b7-4805-ba77-f7d2bdd71e1a   1Gi        RWO            standard       <unset>                 74s
+
+NAME                                             CLASS   HOSTS                   ADDRESS     PORTS     AGE
+ingress.networking.k8s.io/task-tracker-ingress   nginx   dev.tasktracker.local   localhost   80, 443   74s
+$ kubectl get pods,pvc,ingress,pdb -n dso202-a3-prod
+NAME                                       READY   STATUS    RESTARTS   AGE
+pod/backend-deployment-5c498cbb7b-lq5f5    1/1     Running   0          74s
+pod/backend-deployment-5c498cbb7b-zbd6r    1/1     Running   0          74s
+pod/db-0                                   1/1     Running   0          74s
+pod/frontend-deployment-7f6fc66d74-jhc5k   1/1     Running   0          74s
+pod/frontend-deployment-7f6fc66d74-jldzz   1/1     Running   0          74s
+
+NAME                              STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
+persistentvolumeclaim/data-db-0   Bound    pvc-bc529f68-a58d-4724-8140-3ab16fff86bb   2Gi        RWO            standard       <unset>                 74s
+
+NAME                                             CLASS   HOSTS                    ADDRESS     PORTS     AGE
+ingress.networking.k8s.io/task-tracker-ingress   nginx   prod.tasktracker.local   localhost   80, 443   73s
+
+NAME                                      MIN AVAILABLE   MAX UNAVAILABLE   ALLOWED DISRUPTIONS   AGE
+poddisruptionbudget.policy/backend-pdb    1               N/A               1                     74s
+poddisruptionbudget.policy/frontend-pdb   1               N/A               1                     74s

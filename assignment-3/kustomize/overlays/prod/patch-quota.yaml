@@ -1,0 +1,14 @@
+# Strategic merge: room for 2 frontend + 2 backend replicas, a bigger PVC and
+# a rolling update surge.
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: ns-quota
+spec:
+  hard:
+    requests.cpu: "2"
+    requests.memory: 2Gi
+    limits.cpu: "6"
+    limits.memory: 4Gi
+    pods: "12"
+    requests.storage: 3Gi

@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "task-tracker values",
+  "type": "object",
+  "required": ["environment", "image", "frontend", "backend", "database", "ingress"],
+  "properties": {
+    "environment": { "enum": ["", "dev", "staging", "prod"] },
+    "image": {
+      "type": "object",
+      "required": ["registry", "tag", "pullPolicy"],
+      "properties": {
+        "registry":   { "type": "string", "minLength": 1 },
+        "tag":        { "type": "string", "pattern": "^$|^[0-9]+\\.[0-9]+(\\.[0-9]+)?$" },
+        "pullPolicy": { "enum": ["Always", "IfNotPresent", "Never"] }
+      }
+    },
+    "frontend": { "$ref": "#/$defs/tier" },
+    "backend": {
+      "allOf": [{ "$ref": "#/$defs/tier" }],
+      "properties": {
+        "corsOrigin": { "type": "string" },
+        "logLevel":   { "enum": ["debug", "info", "warn", "error"] }
+      }
+    },
+    "database": {
+      "type": "object",
+      "required": ["name", "storage", "auth"],
+      "properties": {
+        "name": { "type": "string", "pattern": "^[a-z_][a-z0-9_]*$" },
+        "image": {
+          "type": "object",
+          "properties": { "tag": { "type": "string", "pattern": "^$|^[0-9]+\\.[0-9]+(\\.[0-9]+)?$" } }
+        },
+        "storage": {
+          "type": "object",
+          "required": ["size", "className"],
+          "properties": {
+            "size":      { "type": "string", "pattern": "^[0-9]+(Mi|Gi)$" },
+            "className": { "type": "string", "minLength": 1 }
+          }
+        },
+        "resources": { "$ref": "#/$defs/resources" },
+        "auth": {
+          "type": "object",
+          "properties": {
+            "existingSecret": { "type": "string" },
+            "username":       { "type": "string" },
+            "password":       { "type": "string" }
+          }
+        }
+      }
+    },
+    "ingress": {
+      "type": "object",
+      "required": ["className", "host"],
+      "properties": {
+        "className":     { "type": "string" },
+        "host":          { "type": "string", "pattern": "^$|^[a-z0-9]([-a-z0-9.]*[a-z0-9])?$" },
+        "tlsSecretName": { "type": "string" },
+        "sslRedirect":   { "type": "boolean" },
+        "proxyBodySize": { "type": "string", "pattern": "^[0-9]+[kmg]?$" },
+        "annotations":   { "type": "object", "additionalProperties": { "type": "string" } }
+      }
+    },
+    "quota":      { "type": "object", "properties": { "enabled": { "type": "boolean" }, "hard": { "type": "object" } } },
+    "limitRange": { "type": "object", "properties": { "enabled": { "type": "boolean" } } },
+    "viewer":     { "type": "object", "properties": { "enabled": { "type": "boolean" } } },
+    "podAnnotations": { "type": "object", "additionalProperties": { "type": "string" } },
+    "nameOverride":     { "type": "string" },
+    "fullnameOverride": { "type": "string" }
+  },
+  "$defs": {
+    "resources": { "type": "object" },
+    "tier": {
+      "type": "object",
+      "required": ["replicaCount", "resources"],
+      "properties": {
+        "replicaCount": { "type": "integer", "minimum": 1, "maximum": 5 },
+        "resources":    { "$ref": "#/$defs/resources" }
+      }
+    }
+  }
+}

@@ -1,0 +1,59 @@
+# BASE - what every environment shares (the Assignment 2 architecture).
+# It changes only when the application architecture changes; environment
+# differences live in ../overlays/<env>.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Compose: plain Kubernetes YAML, no templates. No namespace is set here -
+# each overlay chooses its own.
+resources:
+  - serviceaccounts.yaml
+  - rbac-viewer.yaml
+  - quota.yaml
+  - database.yaml
+  - backend.yaml
+  - frontend.yaml
+  - ingress.yaml
+
+# Transform: labels added to every object and Pod template, but NOT to
+# selectors (Deployment/StatefulSet selectors are immutable after creation).
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: task-tracker
+      app.kubernetes.io/managed-by: kustomize
+    includeSelectors: false
+    includeTemplates: true
+
+# Purpose-built transform: one place to bump the application version of all
+# three tiers.
+images:
+  - name: sarojsanyasi/dso202-frontend
+    newTag: "1.0"
+  - name: sarojsanyasi/dso202-backend
+    newTag: "1.0"
+  - name: sarojsanyasi/dso202-db
+    newTag: "1.0"
+
+# Generators: ConfigMaps/Secrets built from plain files. Each gets a content
+# hash suffix and Kustomize rewrites every reference to it, so a content change
+# -> new name -> new Pod template -> rollout.
+configMapGenerator:
+  - name: app-config          # read by backend + frontend
+    envs:
+      - config/app.env
+  - name: db-config           # read by the database only, so app-config edits
+    envs:                     # never restart the database Pod
+      - config/db.env
+
+secretGenerator:
+  # Classroom credentials (the same values as Assignments 1-2). base64 is not
+  # encryption - a real repository would use Sealed Secrets / External Secrets.
+  - name: db-credentials
+    envs:
+      - config/db-credentials.env
+  # Generated locally by ../../../scripts/make-tls.sh (git-ignored).
+  - name: tasktracker-tls
+    type: kubernetes.io/tls
+    files:
+      - tls.crt=tls/tasktracker.crt
+      - tls.key=tls/tasktracker.key

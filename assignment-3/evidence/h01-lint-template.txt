@@ -1,0 +1,41 @@
+$ tree -a --noreport helm
+helm
+├── environments
+│   ├── dev.yaml
+│   └── prod.yaml
+└── task-tracker
+    ├── Chart.yaml
+    ├── .helmignore
+    ├── templates
+    │   ├── backend.yaml
+    │   ├── configmap.yaml
+    │   ├── database.yaml
+    │   ├── frontend.yaml
+    │   ├── governance.yaml
+    │   ├── _helpers.tpl
+    │   ├── ingress.yaml
+    │   ├── NOTES.txt
+    │   ├── secret.yaml
+    │   ├── serviceaccounts.yaml
+    │   ├── tests
+    │   │   └── test-api.yaml
+    │   └── viewer-rbac.yaml
+    ├── values.schema.json
+    └── values.yaml
+$ for env in dev prod; do helm lint helm/task-tracker -f helm/environments/$env.yaml | tail -1 && helm template task-tracker helm/task-tracker -f helm/environments/$env.yaml > /dev/null && echo "$env: ok"; done
+1 chart(s) linted, 0 chart(s) failed
+dev: ok
+1 chart(s) linted, 0 chart(s) failed
+prod: ok
+$ helm template task-tracker helm/task-tracker -f helm/environments/prod.yaml | grep -E '^kind:' | sort | uniq -c
+      1 kind: ConfigMap
+      2 kind: Deployment
+      1 kind: Ingress
+      1 kind: LimitRange
+      1 kind: Pod
+      1 kind: ResourceQuota
+      1 kind: Role
+      1 kind: RoleBinding
+      3 kind: Service
+      4 kind: ServiceAccount
+      1 kind: StatefulSet

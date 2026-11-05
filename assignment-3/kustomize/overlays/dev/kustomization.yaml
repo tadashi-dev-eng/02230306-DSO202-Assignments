@@ -1,0 +1,51 @@
+# DEV overlay - only what differs from the base.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../base
+  - namespace.yaml
+
+namespace: dso202-a3-dev
+
+labels:
+  - pairs:
+      app.kubernetes.io/environment: dev
+    includeSelectors: false
+    includeTemplates: true
+
+replicas:
+  - name: frontend-deployment
+    count: 1
+  - name: backend-deployment
+    count: 1
+
+# merge: keep every base key, override/add only these.
+configMapGenerator:
+  - name: app-config
+    behavior: merge
+    literals:
+      - CORS_ORIGIN=https://dev.tasktracker.local
+      - LOG_LEVEL=debug
+
+# Tiny, obvious changes -> inline JSON 6902 patch (paths, not Kubernetes shape).
+# "/" inside an annotation key is written "~1" in a JSON pointer.
+# ssl-redirect is REPLACED with "false", not removed: ingress-nginx redirects
+# HTTP->HTTPS by default whenever the host has TLS, so removing the annotation
+# still gave 308 (see evidence/k08-before-fix.txt).
+patches:
+  - target:
+      group: networking.k8s.io
+      version: v1
+      kind: Ingress
+      name: task-tracker-ingress
+    patch: |-
+      - op: replace
+        path: /spec/rules/0/host
+        value: dev.tasktracker.local
+      - op: replace
+        path: /spec/tls/0/hosts/0
+        value: dev.tasktracker.local
+      - op: replace
+        path: /metadata/annotations/nginx.ingress.kubernetes.io~1ssl-redirect
+        value: "false"

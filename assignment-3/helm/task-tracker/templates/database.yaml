@@ -1,0 +1,78 @@
+{{- /* Headless Service + StatefulSet: stable Pod name <db>-0, one PVC per replica. */}}
+{{- $db := include "task-tracker.dbName" . }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $db }}
+  labels:
+    {{- include "task-tracker.labels" (dict "ctx" . "component" "database") | nindent 4 }}
+spec:
+  clusterIP: None
+  selector:
+    {{- include "task-tracker.selectorLabels" (dict "ctx" . "component" "database") | nindent 4 }}
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: postgres
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ $db }}
+  labels:
+    {{- include "task-tracker.labels" (dict "ctx" . "component" "database") | nindent 4 }}
+spec:
+  serviceName: {{ $db }}
+  replicas: 1
+  podManagementPolicy: OrderedReady
+  selector:
+    matchLabels:
+      {{- include "task-tracker.selectorLabels" (dict "ctx" . "component" "database") | nindent 6 }}
+  updateStrategy:
+    type: RollingUpdate
+  # helm uninstall removes the StatefulSet but NOT the PVCs it created - data survives.
+  persistentVolumeClaimRetentionPolicy:
+    whenDeleted: Retain
+    whenScaled: Retain
+  template:
+    metadata:
+      labels:
+        {{- include "task-tracker.labels" (dict "ctx" . "component" "database") | nindent 8 }}
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      serviceAccountName: {{ include "task-tracker.fullname" . }}-db
+      automountServiceAccountToken: false
+      containers:
+        - name: postgres
+          image: {{ include "task-tracker.image" (dict "ctx" . "tier" "db") | quote }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: postgres
+              containerPort: 5432
+          env:
+            - name: POSTGRES_DB
+              valueFrom:
+                configMapKeyRef: {name: {{ include "task-tracker.configName" . }}, key: POSTGRES_DB}
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef: {name: {{ include "task-tracker.secretName" . }}, key: POSTGRES_USER}
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef: {name: {{ include "task-tracker.secretName" . }}, key: POSTGRES_PASSWORD}
+          resources:
+            {{- toYaml .Values.database.resources | nindent 12 }}
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: {{ .Values.database.storage.className }}
+        resources:
+          requests:
+            storage: {{ .Values.database.storage.size }}

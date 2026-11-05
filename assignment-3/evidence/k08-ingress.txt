@@ -1,0 +1,25 @@
+$ kubectl port-forward -n ingress-nginx svc/ingress-nginx-controller 8443:443 8088:80 &
+Forwarding from 127.0.0.1:8443 -> 443
+Forwarding from 127.0.0.1:8088 -> 80
+$ curl -s -w '\n -> HTTP %{http_code}\n' --resolve dev.tasktracker.local:8088:127.0.0.1 http://dev.tasktracker.local:8088/api/status
+{"status":"ok","db":"connected"}
+ -> HTTP 200
+$ curl -s -o /dev/null -w 'HTTP %{http_code} -> %{redirect_url}\n' --resolve prod.tasktracker.local:8088:127.0.0.1 http://prod.tasktracker.local:8088/api/status
+HTTP 308 -> https://prod.tasktracker.local/api/status
+$ curl -s --cacert kustomize/base/tls/tasktracker.crt --resolve prod.tasktracker.local:8443:127.0.0.1 -X POST https://prod.tasktracker.local:8443/api/tasks -H 'Content-Type: application/json' -d '{"title":"Deployed by Kustomize (prod)"}'; echo
+{"id":5,"title":"Deployed by Kustomize (prod)","description":null,"status":"pending","created_at":"2026-11-05T18:20:24.579Z"}
+$ curl -s --cacert kustomize/base/tls/tasktracker.crt --resolve prod.tasktracker.local:8443:127.0.0.1 https://prod.tasktracker.local:8443/api/tasks | python3 -c 'import json,sys; [print(t["id"], t["status"].ljust(11), t["title"]) for t in json.load(sys.stdin)]'
+1 done        Set up kind cluster
+2 in_progress Write namespace manifest
+3 pending     Wire ConfigMap and Secret
+5 pending     Deployed by Kustomize (prod)
+$ curl -s --cacert kustomize/base/tls/tasktracker.crt --resolve dev.tasktracker.local:8443:127.0.0.1 https://dev.tasktracker.local:8443/api/tasks | python3 -c 'import json,sys; [print(t["id"], t["status"].ljust(11), t["title"]) for t in json.load(sys.stdin)]'
+1 done        Set up kind cluster
+2 in_progress Write namespace manifest
+3 pending     Wire ConfigMap and Secret
+4 pending     Deployed by Kustomize (dev)
+$ head -c 700000 /dev/zero | curl -s -D - -o /dev/null --cacert kustomize/base/tls/tasktracker.crt --resolve prod.tasktracker.local:8443:127.0.0.1 -X POST https://prod.tasktracker.local:8443/api/tasks -H 'Content-Type: application/json' --data-binary @- | grep -iE '^HTTP|^x-powered-by'
+HTTP/2 413
+$ head -c 700000 /dev/zero | curl -s -D - -o /dev/null --cacert kustomize/base/tls/tasktracker.crt --resolve dev.tasktracker.local:8443:127.0.0.1 -X POST https://dev.tasktracker.local:8443/api/tasks -H 'Content-Type: application/json' --data-binary @- | grep -iE '^HTTP|^x-powered-by'
+HTTP/2 413
+x-powered-by: Express

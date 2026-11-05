@@ -1,0 +1,24 @@
+$ helm upgrade task-tracker helm/task-tracker -n dso202-a3-helm -f helm/environments/prod.yaml --set backend.logLevel=info --set image.tag=9.9 --rollback-on-failure --timeout 90s
+level=WARN msg="upgrade failed" name=task-tracker error="resource Deployment/dso202-a3-helm/task-tracker-backend not ready. status: InProgress, message: Updated: 1/2\nresource Deployment/dso202-a3-helm/task-tracker-frontend not ready. status: InProgress, message: Updated: 1/2\nresource StatefulSet/dso202-a3-helm/task-tracker-db not ready. status: InProgress, message: Ready: 0/1\ncontext deadline exceeded"
+Error: UPGRADE FAILED: an error occurred while rolling back the release. original upgrade error: resource Deployment/dso202-a3-helm/task-tracker-backend not ready. status: InProgress, message: Updated: 1/2
+resource Deployment/dso202-a3-helm/task-tracker-frontend not ready. status: InProgress, message: Updated: 1/2
+resource StatefulSet/dso202-a3-helm/task-tracker-db not ready. status: InProgress, message: Ready: 0/1
+context deadline exceeded: release task-tracker failed: resource Deployment/dso202-a3-helm/task-tracker-backend not ready. status: InProgress, message: Pending termination: 1
+resource StatefulSet/dso202-a3-helm/task-tracker-db not ready. status: InProgress, message: Ready: 0/1
+context deadline exceeded
+$ kubectl get pods -n dso202-a3-helm -l app.kubernetes.io/component=backend      # (second terminal, during the upgrade)
+NAME                                   READY   STATUS         RESTARTS      AGE
+task-tracker-backend-9c85ff85b-4494h   0/1     Running        1 (41s ago)   96s
+task-tracker-backend-9c85ff85b-65v8w   0/1     Running        1 (41s ago)   74s
+task-tracker-backend-c977fd477-s7smh   0/1     ErrImagePull   0             44s
+$ helm history task-tracker -n dso202-a3-helm
+REVISION	UPDATED                 	STATUS    	CHART             	APP VERSION	DESCRIPTION
+1       	Fri Nov  6 00:21:19 2026	superseded	task-tracker-0.1.0	1.0        	Install complete
+2       	Fri Nov  6 00:22:53 2026	deployed  	task-tracker-0.1.0	1.0        	Upgrade complete
+3       	Fri Nov  6 00:23:45 2026	failed    	task-tracker-0.1.0	1.0        	Upgrade "task-tracker" failed: resource Deployment/dso202-a3-helm/task-tracker-backend not ready. status: InProgress, message: Updated: 1/2
+        	                        	          	                  	           	resourc...
+4       	Fri Nov  6 00:25:17 2026	failed    	task-tracker-0.1.0	1.0        	Release "task-tracker" failed: resource Deployment/dso202-a3-helm/task-tracker-backend not ready. status: InProgress, message: Pending termination...
+$ kubectl get deploy -n dso202-a3-helm -o custom-columns=NAME:.metadata.name,READY:.status.readyReplicas,IMAGE:.spec.template.spec.containers[0].image
+NAME                    READY    IMAGE
+task-tracker-backend    <none>   sarojsanyasi/dso202-backend:1.0
+task-tracker-frontend   2        sarojsanyasi/dso202-frontend:1.0

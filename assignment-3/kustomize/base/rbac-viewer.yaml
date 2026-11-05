@@ -1,0 +1,34 @@
+# Read-only identity for the namespace (no Secrets). Kustomize's namespace
+# transformer also rewrites subjects[].namespace in the RoleBinding.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: app-viewer
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: app-reader
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "pods/log", "services", "endpoints", "configmaps", "persistentvolumeclaims"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["apps"]
+    resources: ["deployments", "statefulsets", "replicasets"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["networking.k8s.io"]
+    resources: ["ingresses"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: app-viewer-binding
+subjects:
+  - kind: ServiceAccount
+    name: app-viewer
+    namespace: default        # replaced by the overlay's namespace
+roleRef:
+  kind: Role
+  name: app-reader
+  apiGroup: rbac.authorization.k8s.io

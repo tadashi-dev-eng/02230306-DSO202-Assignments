@@ -1,0 +1,64 @@
+{{- $name := include "task-tracker.backendName" . }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "task-tracker.labels" (dict "ctx" . "component" "backend") | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "task-tracker.selectorLabels" (dict "ctx" . "component" "backend") | nindent 4 }}
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "task-tracker.labels" (dict "ctx" . "component" "backend") | nindent 4 }}
+spec:
+  replicas: {{ .Values.backend.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "task-tracker.selectorLabels" (dict "ctx" . "component" "backend") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "task-tracker.labels" (dict "ctx" . "component" "backend") | nindent 8 }}
+      annotations:
+        # Hash of the rendered ConfigMap: a config change changes the Pod
+        # template, which rolls out new Pods (Helm's answer to Kustomize's
+        # generated-name hash).
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      serviceAccountName: {{ include "task-tracker.fullname" . }}-backend
+      automountServiceAccountToken: false
+      containers:
+        - name: backend
+          image: {{ include "task-tracker.image" (dict "ctx" . "tier" "backend") | quote }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: {{ include "task-tracker.configName" . }}
+          env:
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef: {name: {{ include "task-tracker.secretName" . }}, key: DB_USER}
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef: {name: {{ include "task-tracker.secretName" . }}, key: DB_PASSWORD}
+          readinessProbe:
+            httpGet: {path: /api/status, port: http}
+            periodSeconds: 5
+          resources:
+            {{- toYaml .Values.backend.resources | nindent 12 }}

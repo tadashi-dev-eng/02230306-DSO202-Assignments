@@ -1,0 +1,18 @@
+{{- /* Non-sensitive settings. Its hash is a Pod annotation (checksum/config), so editing it rolls the Pods. */}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "task-tracker.configName" . }}
+  labels:
+    {{- include "task-tracker.labels" (dict "ctx" . "component" "config") | nindent 4 }}
+data:
+  # StatefulSet Pod 0 behind the headless Service: <sts>-0.<service>
+  DB_HOST: {{ printf "%s-0.%s" (include "task-tracker.dbName" .) (include "task-tracker.dbName" .) | quote }}
+  DB_PORT: "5432"
+  DB_NAME: {{ .Values.database.name | quote }}
+  POSTGRES_DB: {{ .Values.database.name | quote }}
+  APP_PORT: "8080"
+  CORS_ORIGIN: {{ .Values.backend.corsOrigin | default (printf "https://%s" (required "ingress.host must be set" .Values.ingress.host)) | quote }}
+  LOG_LEVEL: {{ .Values.backend.logLevel | quote }}
+  # Same-origin API calls through the Ingress (/api), see Assignment 2.
+  BACKEND_URL: "."

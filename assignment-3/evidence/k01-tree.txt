@@ -1,0 +1,27 @@
+$ tree -a --noreport kustomize -I tls
+kustomize
+├── base
+│   ├── backend.yaml
+│   ├── config
+│   │   ├── app.env
+│   │   ├── db-credentials.env
+│   │   └── db.env
+│   ├── database.yaml
+│   ├── frontend.yaml
+│   ├── ingress.yaml
+│   ├── kustomization.yaml
+│   ├── quota.yaml
+│   ├── rbac-viewer.yaml
+│   └── serviceaccounts.yaml
+└── overlays
+    ├── dev
+    │   ├── kustomization.yaml
+    │   └── namespace.yaml
+    └── prod
+        ├── kustomization.yaml
+        ├── namespace.yaml
+        ├── patch-backend-resources.yaml
+        ├── patch-db-storage.yaml
+        ├── patch-ingress.yaml
+        ├── patch-quota.yaml
+        └── pdb.yaml

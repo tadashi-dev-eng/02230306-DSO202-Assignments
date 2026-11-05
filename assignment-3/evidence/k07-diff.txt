@@ -1,0 +1,4 @@
+$ kubectl diff -k kustomize/overlays/dev; echo "exit code: $?"
+exit code: 0
+$ kubectl diff -k kustomize/overlays/prod; echo "exit code: $?"
+exit code: 0

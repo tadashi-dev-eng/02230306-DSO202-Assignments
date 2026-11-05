@@ -1,0 +1,39 @@
+$ kubectl get pods -n dso202-a3-helm
+NAME                                     READY   STATUS             RESTARTS        AGE
+task-tracker-backend-9c85ff85b-4494h     0/1     Running            1 (3m24s ago)   4m19s
+task-tracker-backend-9c85ff85b-65v8w     0/1     Running            1 (3m24s ago)   3m57s
+task-tracker-backend-c977fd477-s7smh     0/1     ImagePullBackOff   0               3m27s
+task-tracker-db-0                        0/1     ErrImagePull       0               3m22s
+task-tracker-frontend-84c5dc669d-9t8fg   1/1     Running            0               4m10s
+task-tracker-frontend-84c5dc669d-t6rjz   1/1     Running            0               4m19s
+task-tracker-test-api                    0/1     Completed          0               5m5s
+$ kubectl get sts task-tracker-db -n dso202-a3-helm -o jsonpath='{.spec.template.spec.containers[0].image}{"\n"}'; kubectl get pod task-tracker-db-0 -n dso202-a3-helm -o jsonpath='{.spec.containers[0].image}{"\n"}'
+sarojsanyasi/dso202-db:1.0
+sarojsanyasi/dso202-db:9.9
+$ kubectl delete pod task-tracker-db-0 -n dso202-a3-helm
+pod "task-tracker-db-0" deleted from dso202-a3-helm namespace
+$ kubectl rollout status sts/task-tracker-db -n dso202-a3-helm --timeout=180s
+Waiting for 1 pods to be ready...
+statefulset rolling update complete 1 pods at revision task-tracker-db-78d4c4487b...
+$ kubectl rollout status deploy/task-tracker-backend -n dso202-a3-helm --timeout=180s
+Waiting for deployment "task-tracker-backend" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "task-tracker-backend" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "task-tracker-backend" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "task-tracker-backend" rollout to finish: 1 old replicas are pending termination...
+deployment "task-tracker-backend" successfully rolled out
+$ helm rollback task-tracker 2 -n dso202-a3-helm --wait
+Rollback was a success! Happy Helming!
+$ helm history task-tracker -n dso202-a3-helm --max 3
+REVISION	UPDATED                 	STATUS  	CHART             	APP VERSION	DESCRIPTION
+3       	Fri Nov  6 00:23:45 2026	failed  	task-tracker-0.1.0	1.0        	Upgrade "task-tracker" failed: resource Deployment/dso202-a3-helm/task-tracker-backend not ready. status: InProgress, message: Updated: 1/2
+        	                        	        	                  	           	resourc...
+4       	Fri Nov  6 00:25:17 2026	failed  	task-tracker-0.1.0	1.0        	Release "task-tracker" failed: resource Deployment/dso202-a3-helm/task-tracker-backend not ready. status: InProgress, message: Pending termination...
+5       	Fri Nov  6 00:27:25 2026	deployed	task-tracker-0.1.0	1.0        	Rollback to 2
+$ kubectl get pods -n dso202-a3-helm
+NAME                                     READY   STATUS      RESTARTS        AGE
+task-tracker-backend-9c85ff85b-4494h     1/1     Running     1 (3m37s ago)   4m32s
+task-tracker-backend-9c85ff85b-65v8w     1/1     Running     1 (3m37s ago)   4m10s
+task-tracker-db-0                        1/1     Running     0               11s
+task-tracker-frontend-84c5dc669d-9t8fg   1/1     Running     0               4m23s
+task-tracker-frontend-84c5dc669d-t6rjz   1/1     Running     0               4m32s
+task-tracker-test-api                    0/1     Completed   0               5m18s

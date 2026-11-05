@@ -1,0 +1,4 @@
+# TLS private keys and certificates are generated locally by scripts/make-tls.sh
+*.key
+*.crt
+*.tgz

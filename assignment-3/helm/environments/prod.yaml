@@ -1,0 +1,37 @@
+# environments/prod.yaml - overrides for the production release.
+# Sets every key prod cares about, so it never inherits another file's values.
+environment: prod
+frontend:
+  replicaCount: 2
+backend:
+  replicaCount: 2
+  logLevel: warn
+  resources:
+    requests: {cpu: 200m, memory: 192Mi}
+    limits: {cpu: "1", memory: 384Mi}
+database:
+  storage:
+    size: 2Gi
+  auth:
+    # Created beforehand with kubectl, so the password never enters Helm's
+    # release record (helm get values shows only this name).
+    existingSecret: task-tracker-db-credentials
+ingress:
+  host: helm.tasktracker.local
+  tlsSecretName: tasktracker-tls
+  sslRedirect: true
+  proxyBodySize: 512k
+  annotations:
+    dso202.io/owner: platform-team
+quota:
+  hard:
+    requests.cpu: "2"
+    requests.memory: 2Gi
+    limits.cpu: "6"
+    limits.memory: 4Gi
+    pods: "12"
+    services: "4"
+    services.nodeports: "0"
+    services.loadbalancers: "0"
+    persistentvolumeclaims: "2"
+    requests.storage: 3Gi

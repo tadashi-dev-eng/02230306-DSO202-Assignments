@@ -1,0 +1,6 @@
+# Files matched here are left out of the packaged chart (helm package).
+.git/
+*.swp
+*.bak
+*.tmp
+.DS_Store

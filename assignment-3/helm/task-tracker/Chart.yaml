@@ -1,0 +1,16 @@
+# Chart.yaml - identity and metadata of the chart.
+apiVersion: v2                    # chart format for Helm 3 and Helm 4
+name: task-tracker                # must match the directory name
+description: DSO202 three-tier Task Tracker (frontend, backend API, PostgreSQL StatefulSet) behind an NGINX Ingress
+type: application
+version: 0.2.0                    # version of the CHART - bump on every chart change
+                                  # 0.2.0: database image tag decoupled from image.tag
+appVersion: "1.0"                 # version of the APPLICATION images - quoted so YAML keeps a string
+kubeVersion: ">=1.30.0-0"
+keywords:
+  - dso202
+  - task-tracker
+  - statefulset
+  - ingress
+maintainers:
+  - name: tadashi-dev-eng

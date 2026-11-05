@@ -1,0 +1,12 @@
+- op: replace
+  path: /spec/rules/0/host
+  value: prod.tasktracker.local
+- op: replace
+  path: /spec/tls/0/hosts/0
+  value: prod.tasktracker.local
+- op: replace
+  path: /metadata/annotations/nginx.ingress.kubernetes.io~1proxy-body-size
+  value: 512k
+- op: add
+  path: /metadata/annotations/dso202.io~1owner
+  value: platform-team

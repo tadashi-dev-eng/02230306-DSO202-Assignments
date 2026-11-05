@@ -1,0 +1,19 @@
+$ kubectl scale deploy task-tracker-frontend -n dso202-a3-helm --replicas=4
+deployment.apps/task-tracker-frontend scaled
+$ kubectl get deploy task-tracker-frontend -n dso202-a3-helm -o json --show-managed-fields | python3 -c 'import json,sys; [print(m["manager"].ljust(24), m["operation"].ljust(7), m.get("subresource","").ljust(6), "owns spec.replicas" if "f:replicas" in json.dumps(m["fieldsV1"].get("f:spec",{})) else "") for m in json.load(sys.stdin)["metadata"]["managedFields"]]'
+helm                     Apply
+kubectl                  Update  scale  owns spec.replicas
+kube-controller-manager  Update  status
+$ helm upgrade task-tracker helm/task-tracker -n dso202-a3-helm -f helm/environments/prod.yaml --wait 2>&1 | grep '^Error' | fold -w 150
+Error: UPGRADE FAILED: conflict occurred while applying object dso202-a3-helm/task-tracker-frontend apps/v1, Kind=Deployment: Apply failed with 1 conf
+lict: conflict with "kubectl" with subresource "scale" using apps/v1: .spec.replicas
+$ helm upgrade task-tracker helm/task-tracker -n dso202-a3-helm -f helm/environments/prod.yaml --wait --force-conflicts | sed -n '1p;6,7p'
+Release "task-tracker" has been upgraded. Happy Helming!
+REVISION: 12
+DESCRIPTION: Upgrade complete
+$ kubectl get deploy task-tracker-frontend -n dso202-a3-helm -o json --show-managed-fields | python3 -c 'import json,sys; [print(m["manager"].ljust(24), m["operation"].ljust(7), m.get("subresource","").ljust(6), "owns spec.replicas" if "f:replicas" in json.dumps(m["fieldsV1"].get("f:spec",{})) else "") for m in json.load(sys.stdin)["metadata"]["managedFields"]]'
+helm                     Apply          owns spec.replicas
+kube-controller-manager  Update  status
+$ kubectl get deploy task-tracker-frontend -n dso202-a3-helm
+NAME                    READY   UP-TO-DATE   AVAILABLE   AGE
+task-tracker-frontend   2/2     2            2           8m50s

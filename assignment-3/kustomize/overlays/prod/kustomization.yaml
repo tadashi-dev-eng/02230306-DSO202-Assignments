@@ -1,0 +1,48 @@
+# PROD overlay - only what differs from the base.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../base
+  - namespace.yaml
+  - pdb.yaml                  # an object only production has
+
+namespace: dso202-a3-prod
+
+labels:
+  - pairs:
+      app.kubernetes.io/environment: prod
+    includeSelectors: false
+    includeTemplates: true
+
+replicas:
+  - name: frontend-deployment
+    count: 2
+  - name: backend-deployment
+    count: 2
+
+configMapGenerator:
+  - name: app-config
+    behavior: merge
+    literals:
+      - CORS_ORIGIN=https://prod.tasktracker.local
+      - LOG_LEVEL=warn
+
+patches:
+  # Strategic merge - reads like Kubernetes YAML (named container, resources).
+  - path: patch-backend-resources.yaml
+  - path: patch-quota.yaml
+  # JSON 6902 - exact paths: Ingress host, owner annotation, and the PVC size
+  # inside volumeClaimTemplates (a list strategic merge cannot key reliably).
+  - path: patch-ingress.yaml
+    target:
+      group: networking.k8s.io
+      version: v1
+      kind: Ingress
+      name: task-tracker-ingress
+  - path: patch-db-storage.yaml
+    target:
+      group: apps
+      version: v1
+      kind: StatefulSet
+      name: db

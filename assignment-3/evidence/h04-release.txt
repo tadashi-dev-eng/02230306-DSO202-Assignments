@@ -1,0 +1,36 @@
+$ helm list -n dso202-a3-helm
+NAME        	NAMESPACE     	REVISION	UPDATED                               	STATUS  	CHART             	APP VERSION
+task-tracker	dso202-a3-helm	1       	2026-11-06 00:31:15.88260095 +0600 +06	deployed	task-tracker-0.2.0	1.0
+$ kubectl get pods,svc,pvc,ingress -n dso202-a3-helm
+NAME                                         READY   STATUS      RESTARTS   AGE
+pod/task-tracker-backend-6494f964bf-5gq57    1/1     Running     0          31s
+pod/task-tracker-backend-6494f964bf-dkhwg    1/1     Running     0          31s
+pod/task-tracker-db-0                        1/1     Running     0          31s
+pod/task-tracker-frontend-85499b6d5c-684lp   1/1     Running     0          31s
+pod/task-tracker-frontend-85499b6d5c-8594x   1/1     Running     0          31s
+pod/task-tracker-test-api                    0/1     Completed   0          9m39s
+
+NAME                            TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)    AGE
+service/task-tracker-backend    ClusterIP   10.96.33.243   <none>        8080/TCP   31s
+service/task-tracker-db         ClusterIP   None           <none>        5432/TCP   31s
+service/task-tracker-frontend   ClusterIP   10.96.54.22    <none>        8080/TCP   31s
+
+NAME                                           STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
+persistentvolumeclaim/data-task-tracker-db-0   Bound    pvc-d28b3f65-3273-42e1-a916-5aa8bef6c2eb   2Gi        RWO            standard       <unset>                 10m
+
+NAME                                     CLASS   HOSTS                    ADDRESS     PORTS     AGE
+ingress.networking.k8s.io/task-tracker   nginx   helm.tasktracker.local   localhost   80, 443   31s
+$ kubectl get secrets -n dso202-a3-helm
+NAME                                 TYPE                 DATA   AGE
+sh.helm.release.v1.task-tracker.v1   helm.sh/release.v1   1      31s
+task-tracker-db-credentials          Opaque               4      10m
+tasktracker-tls                      kubernetes.io/tls    2      10m
+$ kubectl get deploy task-tracker-backend -n dso202-a3-helm -o jsonpath='{.metadata.labels.app\.kubernetes\.io/managed-by}{" "}{.metadata.annotations}{"\n"}'
+Helm {"deployment.kubernetes.io/revision":"1","meta.helm.sh/release-name":"task-tracker","meta.helm.sh/release-namespace":"dso202-a3-helm"}
+$ helm get values task-tracker -n dso202-a3-helm --all | grep -A3 '  auth:'
+  auth:
+    existingSecret: task-tracker-db-credentials
+    password: ""
+    username: ""
+$ kubectl get secret sh.helm.release.v1.task-tracker.v1 -n dso202-a3-helm -o jsonpath='{.data.release}' | base64 -d | base64 -d | gunzip | grep -c 'Ds(53)'
+0

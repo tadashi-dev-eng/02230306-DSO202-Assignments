@@ -1,0 +1,69 @@
+# Headless Service + StatefulSet (Assignment 2, 2.1): stable name db-0 and
+# stable address db-0.db-svc, one PVC per replica from volumeClaimTemplates.
+apiVersion: v1
+kind: Service
+metadata:
+  name: db-svc
+  labels: {app: task-tracker, tier: database}
+spec:
+  clusterIP: None
+  selector: {app: task-tracker, tier: database}
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: postgres
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: db
+  labels: {app: task-tracker, tier: database}
+spec:
+  serviceName: db-svc
+  replicas: 1
+  podManagementPolicy: OrderedReady
+  selector:
+    matchLabels: {app: task-tracker, tier: database}
+  updateStrategy:
+    type: RollingUpdate
+  persistentVolumeClaimRetentionPolicy:
+    whenDeleted: Retain
+    whenScaled: Retain
+  template:
+    metadata:
+      labels: {app: task-tracker, tier: database}
+    spec:
+      serviceAccountName: db-sa
+      automountServiceAccountToken: false
+      containers:
+        - name: postgres
+          image: sarojsanyasi/dso202-db        # tag set by images: in kustomization.yaml
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: postgres
+              containerPort: 5432
+          envFrom:
+            - configMapRef:
+                name: db-config                 # rewritten to db-config-<hash>
+          env:
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef: {name: db-credentials, key: POSTGRES_USER}
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef: {name: db-credentials, key: POSTGRES_PASSWORD}
+          resources:
+            requests: {cpu: 250m, memory: 256Mi}
+            limits: {cpu: "1", memory: 512Mi}
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: standard
+        resources:
+          requests:
+            storage: 1Gi

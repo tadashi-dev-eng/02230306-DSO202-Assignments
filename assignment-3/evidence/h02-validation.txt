@@ -1,0 +1,33 @@
+$ helm template task-tracker helm/task-tracker
+Error: execution error at (task-tracker/templates/tests/test-api.yaml:12:8): environment must be set (dev, staging or prod)
+
+Use --debug flag to render out invalid YAML
+$ helm lint helm/task-tracker 2>&1 | grep -oE 'message=.*|.*linted.*' | sort | uniq -c; echo "exit code: ${PIPESTATUS[0]}"
+      1 1 chart(s) linted, 0 chart(s) failed
+      1 message="database.auth.password is required when database.auth.existingSecret is empty"
+      1 message="database.auth.username is required when database.auth.existingSecret is empty"
+     24 message="environment must be set (dev, staging or prod)"
+      4 message="ingress.host must be set"
+exit code: 0
+$ helm template task-tracker helm/task-tracker -f helm/environments/prod.yaml --set image.tag=latest
+Error: values don't meet the specifications of the schema(s) in the following chart(s):
+task-tracker:
+- at '/image/tag': 'latest' does not match pattern '^$|^[0-9]+\\.[0-9]+(\\.[0-9]+)?$'
+
+$ helm template task-tracker helm/task-tracker -f helm/environments/prod.yaml --set frontend.replicaCount=10 --set environment=test --set ingress.proxyBodySize=1MB
+Error: values don't meet the specifications of the schema(s) in the following chart(s):
+task-tracker:
+- at '/frontend/replicaCount': maximum: got 10, want 5
+- at '/ingress/proxyBodySize': '1MB' does not match pattern '^[0-9]+[kmg]?$'
+- at '/environment': value must be one of '', 'dev', 'staging', 'prod'
+
+$ printf 'image:\n  tag: 1.10\n' > tag-float.yaml
+$ helm template task-tracker helm/task-tracker -f helm/environments/prod.yaml -f tag-float.yaml
+Error: values don't meet the specifications of the schema(s) in the following chart(s):
+task-tracker:
+- at '/image/tag': got number, want string
+
+$ helm template task-tracker helm/task-tracker -f helm/environments/dev.yaml --set database.auth.password=
+Error: execution error at (task-tracker/templates/secret.yaml:7:13): database.auth.password is required when database.auth.existingSecret is empty
+
+Use --debug flag to render out invalid YAML

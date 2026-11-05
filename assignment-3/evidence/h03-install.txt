@@ -1,0 +1,23 @@
+$ kubectl create namespace dso202-a3-helm
+namespace/dso202-a3-helm created
+$ kubectl create secret generic task-tracker-db-credentials -n dso202-a3-helm --from-env-file=kustomize/base/config/db-credentials.env
+secret/task-tracker-db-credentials created
+$ kubectl create secret tls tasktracker-tls -n dso202-a3-helm --cert=kustomize/base/tls/tasktracker.crt --key=kustomize/base/tls/tasktracker.key
+secret/tasktracker-tls created
+$ helm install task-tracker helm/task-tracker -n dso202-a3-helm -f helm/environments/prod.yaml --wait --timeout 5m
+NAME: task-tracker
+LAST DEPLOYED: Fri Nov  6 00:21:19 2026
+NAMESPACE: dso202-a3-helm
+STATUS: deployed
+REVISION: 1
+DESCRIPTION: Install complete
+NOTES:
+Task Tracker release task-tracker (revision 1) is in namespace dso202-a3-helm.
+Environment: prod | frontend x2, backend x2, database StatefulSet task-tracker-db (2Gi)
+
+Reach it through the NGINX Ingress (kind: port-forward the controller first):
+  kubectl -n ingress-nginx port-forward svc/ingress-nginx-controller 8443:443
+  curl -k --resolve helm.tasktracker.local:8443:127.0.0.1 https://helm.tasktracker.local:8443/api/tasks
+
+Run the chart's tests:
+  helm test task-tracker -n dso202-a3-helm

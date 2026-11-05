@@ -1,0 +1,39 @@
+$ kubectl kustomize kustomize/overlays/dev | grep -E '^kind:' | sort | uniq -c
+      2 kind: ConfigMap
+      2 kind: Deployment
+      1 kind: Ingress
+      1 kind: LimitRange
+      1 kind: Namespace
+      1 kind: ResourceQuota
+      1 kind: Role
+      1 kind: RoleBinding
+      2 kind: Secret
+      3 kind: Service
+      4 kind: ServiceAccount
+      1 kind: StatefulSet
+$ kubectl kustomize kustomize/overlays/prod | grep -E '^kind:' | sort | uniq -c
+      2 kind: ConfigMap
+      2 kind: Deployment
+      1 kind: Ingress
+      1 kind: LimitRange
+      1 kind: Namespace
+      2 kind: PodDisruptionBudget
+      1 kind: ResourceQuota
+      1 kind: Role
+      1 kind: RoleBinding
+      2 kind: Secret
+      3 kind: Service
+      4 kind: ServiceAccount
+      1 kind: StatefulSet
+$ kubectl kustomize kustomize/overlays/dev | grep -E 'name: (app-config|db-config|db-credentials|tasktracker-tls)'
+  name: app-config-6d87g92896
+  name: db-config-29m6t646t6
+  name: db-credentials-8km6k6h8b5
+  name: tasktracker-tls-ctctthhc2k
+              name: db-credentials-8km6k6h8b5
+              name: db-credentials-8km6k6h8b5
+            name: app-config-6d87g92896
+              name: app-config-6d87g92896
+              name: db-credentials-8km6k6h8b5
+              name: db-credentials-8km6k6h8b5
+            name: db-config-29m6t646t6

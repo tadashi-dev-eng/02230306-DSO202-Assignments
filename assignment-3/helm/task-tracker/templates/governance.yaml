@@ -1,0 +1,32 @@
+{{- if .Values.quota.enabled }}
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: {{ include "task-tracker.fullname" . }}-quota
+  labels:
+    {{- include "task-tracker.labels" (dict "ctx" . "component" "governance") | nindent 4 }}
+spec:
+  hard:
+    {{- range $k, $v := .Values.quota.hard }}
+    {{ $k }}: {{ $v | quote }}
+    {{- end }}
+{{- end }}
+{{- if .Values.limitRange.enabled }}
+---
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: {{ include "task-tracker.fullname" . }}-limits
+  labels:
+    {{- include "task-tracker.labels" (dict "ctx" . "component" "governance") | nindent 4 }}
+spec:
+  limits:
+    - type: Container
+      defaultRequest: {cpu: 100m, memory: 128Mi}
+      default: {cpu: 250m, memory: 256Mi}
+      min: {cpu: 10m, memory: 16Mi}
+      max: {cpu: "1", memory: 1Gi}
+    - type: PersistentVolumeClaim
+      min: {storage: 500Mi}
+      max: {storage: 2Gi}
+{{- end }}

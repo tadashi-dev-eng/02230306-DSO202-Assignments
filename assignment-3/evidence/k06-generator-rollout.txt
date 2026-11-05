@@ -1,0 +1,47 @@
+$ kubectl get configmap,replicaset -n dso202-a3-dev
+NAME                              DATA   AGE
+configmap/app-config-6d87g92896   7      102s
+configmap/db-config-29m6t646t6    1      102s
+configmap/kube-root-ca.crt        1      102s
+
+NAME                                            DESIRED   CURRENT   READY   AGE
+replicaset.apps/backend-deployment-b749c467f    1         1         1       101s
+replicaset.apps/frontend-deployment-69655c685   1         1         1       101s
+$ sed -i 's/LOG_LEVEL=info/LOG_LEVEL=debug/' kustomize/overlays/dev/kustomization.yaml
+$ kubectl diff -k kustomize/overlays/dev | grep -E '^[-+] .*(name: app-config|LOG_LEVEL)'
+-            name: app-config-6d87g92896
++            name: app-config-4t7ftdh5gf
+-              name: app-config-6d87g92896
++              name: app-config-4t7ftdh5gf
++  LOG_LEVEL: debug
++  name: app-config-4t7ftdh5gf
+$ kubectl apply -k kustomize/overlays/dev | grep -v unchanged
+configmap/app-config-4t7ftdh5gf created
+secret/tasktracker-tls-ctctthhc2k configured
+deployment.apps/backend-deployment configured
+deployment.apps/frontend-deployment configured
+statefulset.apps/db configured
+$ kubectl rollout status deploy/backend-deployment -n dso202-a3-dev
+Waiting for deployment "backend-deployment" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "backend-deployment" rollout to finish: 1 old replicas are pending termination...
+deployment "backend-deployment" successfully rolled out
+$ kubectl rollout status deploy/frontend-deployment -n dso202-a3-dev
+deployment "frontend-deployment" successfully rolled out
+$ kubectl get configmap,replicaset,pods -n dso202-a3-dev
+NAME                              DATA   AGE
+configmap/app-config-4t7ftdh5gf   7      18s
+configmap/app-config-6d87g92896   7      2m2s
+configmap/db-config-29m6t646t6    1      2m2s
+configmap/kube-root-ca.crt        1      2m2s
+
+NAME                                             DESIRED   CURRENT   READY   AGE
+replicaset.apps/backend-deployment-58669b59c4    1         1         1       17s
+replicaset.apps/backend-deployment-b749c467f     0         0         0       2m1s
+replicaset.apps/frontend-deployment-69655c685    0         0         0       2m1s
+replicaset.apps/frontend-deployment-6cc56dfb56   1         1         1       17s
+
+NAME                                       READY   STATUS        RESTARTS   AGE
+pod/backend-deployment-58669b59c4-kznkp    1/1     Running       0          17s
+pod/backend-deployment-b749c467f-5l2c4     1/1     Terminating   0          2m1s
+pod/db-0                                   1/1     Running       0          2m1s
+pod/frontend-deployment-6cc56dfb56-nwcgb   1/1     Running       0          17s

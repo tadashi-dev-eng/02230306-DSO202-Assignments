@@ -1,0 +1,18 @@
+$ helm test task-tracker -n dso202-a3-helm
+NAME: task-tracker
+LAST DEPLOYED: Fri Nov  6 00:31:15 2026
+NAMESPACE: dso202-a3-helm
+STATUS: deployed
+REVISION: 1
+DESCRIPTION: Install complete
+TEST SUITE:     task-tracker-test-api
+Last Started:   Fri Nov  6 00:31:48 2026
+Last Completed: Fri Nov  6 00:32:02 2026
+Phase:          Succeeded
+$ kubectl logs task-tracker-test-api -n dso202-a3-helm
+frontend: <title>Field Log — Task Tracker</title>
+status:   {"status":"ok","db":"connected"}
+tasks:    4 returned
+all checks passed
+$ helm get manifest task-tracker -n dso202-a3-helm | kubectl diff -n dso202-a3-helm -f - ; echo "exit code: $?"
+exit code: 0

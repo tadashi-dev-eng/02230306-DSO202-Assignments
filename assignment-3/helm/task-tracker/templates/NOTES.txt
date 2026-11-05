@@ -1,0 +1,9 @@
+Task Tracker release {{ .Release.Name }} (revision {{ .Release.Revision }}) is in namespace {{ .Release.Namespace }}.
+Environment: {{ include "task-tracker.environment" . }} | frontend x{{ .Values.frontend.replicaCount }}, backend x{{ .Values.backend.replicaCount }}, database StatefulSet {{ include "task-tracker.dbName" . }} ({{ .Values.database.storage.size }})
+
+Reach it through the NGINX Ingress (kind: port-forward the controller first):
+  kubectl -n ingress-nginx port-forward svc/ingress-nginx-controller 8443:443
+  curl -k --resolve {{ .Values.ingress.host }}:8443:127.0.0.1 https://{{ .Values.ingress.host }}:8443/api/tasks
+
+Run the chart's tests:
+  helm test {{ .Release.Name }} -n {{ .Release.Namespace }}

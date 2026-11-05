@@ -1,0 +1,39 @@
+$ curl -s --cacert kustomize/base/tls/tasktracker.crt --resolve helm.tasktracker.local:8443:127.0.0.1 https://helm.tasktracker.local:8443/api/tasks | python3 -c 'import json,sys; [print(t["id"], t["status"].ljust(11), t["title"]) for t in json.load(sys.stdin)]'
+1 done        Set up kind cluster
+2 in_progress Write namespace manifest
+3 pending     Wire ConfigMap and Secret
+4 pending     Survives helm uninstall
+$ helm uninstall task-tracker -n dso202-a3-helm --wait
+release "task-tracker" uninstalled
+$ kubectl wait --for=delete pod -n dso202-a3-helm -l app.kubernetes.io/instance=task-tracker,app.kubernetes.io/component!=test --timeout=180s
+pod/task-tracker-backend-6494f964bf-cs22w condition met
+pod/task-tracker-backend-6494f964bf-s9f8x condition met
+pod/task-tracker-db-0 condition met
+pod/task-tracker-frontend-85499b6d5c-scr2f condition met
+pod/task-tracker-frontend-85499b6d5c-twsr7 condition met
+$ helm list -n dso202-a3-helm
+NAME	NAMESPACE	REVISION	UPDATED	STATUS	CHART	APP VERSION
+$ kubectl get all,pvc,secrets -n dso202-a3-helm
+NAME                        READY   STATUS      RESTARTS   AGE
+pod/task-tracker-test-api   0/1     Completed   0          9m7s
+
+NAME                                           STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
+persistentvolumeclaim/data-task-tracker-db-0   Bound    pvc-d28b3f65-3273-42e1-a916-5aa8bef6c2eb   2Gi        RWO            standard       <unset>                 9m56s
+
+NAME                                 TYPE                DATA   AGE
+secret/task-tracker-db-credentials   Opaque              4      9m57s
+secret/tasktracker-tls               kubernetes.io/tls   2      9m57s
+$ helm install task-tracker helm/task-tracker -n dso202-a3-helm -f helm/environments/prod.yaml --wait | sed -n '1,6p'
+NAME: task-tracker
+LAST DEPLOYED: Fri Nov  6 00:31:15 2026
+NAMESPACE: dso202-a3-helm
+STATUS: deployed
+REVISION: 1
+DESCRIPTION: Install complete
+$ kubectl rollout status deploy/task-tracker-backend -n dso202-a3-helm
+deployment "task-tracker-backend" successfully rolled out
+$ curl -s --cacert kustomize/base/tls/tasktracker.crt --resolve helm.tasktracker.local:8443:127.0.0.1 https://helm.tasktracker.local:8443/api/tasks | python3 -c 'import json,sys; [print(t["id"], t["status"].ljust(11), t["title"]) for t in json.load(sys.stdin)]'
+1 done        Set up kind cluster
+2 in_progress Write namespace manifest
+3 pending     Wire ConfigMap and Secret
+4 pending     Survives helm uninstall

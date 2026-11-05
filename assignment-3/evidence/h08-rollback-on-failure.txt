@@ -1,0 +1,35 @@
+$ helm upgrade task-tracker helm/task-tracker -n dso202-a3-helm -f helm/environments/prod.yaml --wait | sed -n '1p;6,7p'
+Release "task-tracker" has been upgraded. Happy Helming!
+REVISION: 6
+DESCRIPTION: Upgrade complete
+$ kubectl get pod task-tracker-db-0 -n dso202-a3-helm -o custom-columns=POD:.metadata.name,STARTED:.status.startTime,IMAGE:.spec.containers[0].image
+POD                 STARTED                IMAGE
+task-tracker-db-0   2026-11-05T18:27:55Z   sarojsanyasi/dso202-db:1.0
+$ helm upgrade task-tracker helm/task-tracker -n dso202-a3-helm -f helm/environments/prod.yaml --set image.tag=9.9 --rollback-on-failure --timeout 60s 2>&1 | cut -c1-150; echo "exit code: ${PIPESTATUS[0]}"
+level=WARN msg="upgrade failed" name=task-tracker error="resource Deployment/dso202-a3-helm/task-tracker-backend not ready. status: InProgress, messag
+Error: UPGRADE FAILED: release task-tracker failed, and has been rolled back due to rollback-on-failure being set: resource Deployment/dso202-a3-helm/
+resource Deployment/dso202-a3-helm/task-tracker-frontend not ready. status: InProgress, message: Updated: 1/2
+context deadline exceeded
+exit code: 1
+$ kubectl get pod task-tracker-db-0 -n dso202-a3-helm -o custom-columns=POD:.metadata.name,STARTED:.status.startTime,IMAGE:.spec.containers[0].image
+POD                 STARTED                IMAGE
+task-tracker-db-0   2026-11-05T18:27:55Z   sarojsanyasi/dso202-db:1.0
+$ kubectl get pods -n dso202-a3-helm
+NAME                                     READY   STATUS        RESTARTS   AGE
+task-tracker-backend-6494f964bf-4lfmg    1/1     Running       0          83s
+task-tracker-backend-6494f964bf-5gk7p    1/1     Running       0          101s
+task-tracker-backend-6d69f47fb8-dgt7g    0/1     Terminating   0          62s
+task-tracker-db-0                        1/1     Running       0          99s
+task-tracker-frontend-664f4965b6-49mt5   0/1     Terminating   0          62s
+task-tracker-frontend-85499b6d5c-67jb7   1/1     Running       0          92s
+task-tracker-frontend-85499b6d5c-8jnh2   1/1     Running       0          101s
+task-tracker-test-api                    0/1     Completed     0          7m26s
+$ helm history task-tracker -n dso202-a3-helm -o json | python3 -c 'import json,sys; [print(str(h["revision"]).ljust(4), h["status"].ljust(11), h["chart"].ljust(19), h["description"][:60]) for h in json.load(sys.stdin)]'
+1    superseded  task-tracker-0.1.0  Install complete
+2    superseded  task-tracker-0.1.0  Upgrade complete
+3    failed      task-tracker-0.1.0  Upgrade "task-tracker" failed: resource Deployment/dso202-a3
+4    failed      task-tracker-0.1.0  Release "task-tracker" failed: resource Deployment/dso202-a3
+5    superseded  task-tracker-0.1.0  Rollback to 2
+6    superseded  task-tracker-0.2.0  Upgrade complete
+7    failed      task-tracker-0.2.0  Upgrade "task-tracker" failed: resource Deployment/dso202-a3
+8    deployed    task-tracker-0.2.0  Rollback to 6

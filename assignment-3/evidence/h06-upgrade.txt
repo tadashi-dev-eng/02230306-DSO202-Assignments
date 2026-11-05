@@ -1,0 +1,22 @@
+$ kubectl get deploy task-tracker-backend -n dso202-a3-helm -o jsonpath='{.spec.template.metadata.annotations.checksum/config}{"\n"}'
+74ad857a1c84a36a080c2344975e5a04e48a851ad03ef3999f501b996fbfcb59
+$ helm upgrade task-tracker helm/task-tracker -n dso202-a3-helm -f helm/environments/prod.yaml --set backend.logLevel=info --wait | head -7
+Release "task-tracker" has been upgraded. Happy Helming!
+NAME: task-tracker
+LAST DEPLOYED: Fri Nov  6 00:22:53 2026
+NAMESPACE: dso202-a3-helm
+STATUS: deployed
+REVISION: 2
+DESCRIPTION: Upgrade complete
+$ kubectl get deploy task-tracker-backend -n dso202-a3-helm -o jsonpath='{.spec.template.metadata.annotations.checksum/config}{"\n"}'
+5e4c83c6919e88602257b8afc95065584ffeddb7ba6d393e8c05ebe0a4571d7b
+$ kubectl get configmap task-tracker-config -n dso202-a3-helm -o jsonpath='{.data.LOG_LEVEL}{"\n"}'
+info
+$ kubectl get rs -n dso202-a3-helm -l app.kubernetes.io/component=backend
+NAME                              DESIRED   CURRENT   READY   AGE
+task-tracker-backend-77cc8c75d7   0         0         0       2m16s
+task-tracker-backend-9c85ff85b    2         2         2       41s
+$ helm history task-tracker -n dso202-a3-helm
+REVISION	UPDATED                 	STATUS    	CHART             	APP VERSION	DESCRIPTION
+1       	Fri Nov  6 00:21:19 2026	superseded	task-tracker-0.1.0	1.0        	Install complete
+2       	Fri Nov  6 00:22:53 2026	deployed  	task-tracker-0.1.0	1.0        	Upgrade complete

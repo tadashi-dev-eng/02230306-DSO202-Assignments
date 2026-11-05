@@ -1,0 +1,88 @@
+# values.yaml - default configuration of the task-tracker chart.
+# Every key can be overridden with -f <file> or --set <key>=<value>.
+# The chart's interface is validated by values.schema.json.
+
+# Environment name. No default on purpose: rendering stops until one is chosen.
+environment: ""
+
+# Image settings for the APPLICATION tiers (frontend, backend).
+# An empty tag means .Chart.AppVersion. The database has its own tag below:
+# chart 0.1.0 shared one tag, so a bad app upgrade also broke PostgreSQL.
+image:
+  registry: sarojsanyasi
+  tag: ""
+  pullPolicy: IfNotPresent
+
+frontend:
+  replicaCount: 1
+  resources:
+    requests: {cpu: 50m, memory: 64Mi}
+    limits: {cpu: 200m, memory: 128Mi}
+
+backend:
+  replicaCount: 1
+  # CORS origin; empty means "https://<ingress.host>".
+  corsOrigin: ""
+  logLevel: info
+  resources:
+    requests: {cpu: 100m, memory: 128Mi}
+    limits: {cpu: 500m, memory: 256Mi}
+
+database:
+  name: taskdb
+  image:
+    # Upgraded deliberately and separately from the app tiers.
+    # An empty tag means .Chart.AppVersion.
+    tag: ""
+  storage:
+    size: 1Gi
+    className: standard
+  resources:
+    requests: {cpu: 250m, memory: 256Mi}
+    limits: {cpu: "1", memory: 512Mi}
+  auth:
+    # Name of an existing Secret with keys DB_USER, DB_PASSWORD, POSTGRES_USER,
+    # POSTGRES_PASSWORD. Preferred: the password then never enters Helm's
+    # release record. When empty, the chart creates the Secret from
+    # username/password below (both then required).
+    existingSecret: ""
+    username: ""
+    password: ""
+
+ingress:
+  className: nginx
+  # Host name; required.
+  host: ""
+  # Existing kubernetes.io/tls Secret for the host; empty = no TLS block.
+  tlsSecretName: ""
+  sslRedirect: true
+  proxyBodySize: 1m
+  annotations: {}
+
+# Namespace governance (Assignment 1 Task 6 / Assignment 2).
+quota:
+  enabled: true
+  hard:
+    requests.cpu: "1"
+    requests.memory: 1Gi
+    limits.cpu: "3"
+    limits.memory: 2Gi
+    pods: "8"
+    services: "4"
+    services.nodeports: "0"
+    services.loadbalancers: "0"
+    persistentvolumeclaims: "2"
+    requests.storage: 2Gi
+
+limitRange:
+  enabled: true
+
+# Read-only ServiceAccount + Role for the namespace (no Secrets).
+viewer:
+  enabled: true
+
+# Extra annotations added to every Pod.
+podAnnotations: {}
+
+nameOverride: ""
+fullnameOverride: ""

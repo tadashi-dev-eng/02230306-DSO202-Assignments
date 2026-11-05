@@ -1,0 +1,32 @@
+# Single HTTPS entry point (Assignment 2, 2.2). The host is a placeholder that
+# every overlay replaces with a JSON 6902 patch.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: task-tracker-ingress
+  labels: {app: task-tracker}
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "1m"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - tasktracker.local
+      secretName: tasktracker-tls        # rewritten to tasktracker-tls-<hash>
+  rules:
+    - host: tasktracker.local
+      http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: backend-svc
+                port: {number: 8080}
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend-svc
+                port: {number: 8080}

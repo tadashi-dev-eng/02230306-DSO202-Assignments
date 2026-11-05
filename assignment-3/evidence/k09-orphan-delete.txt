@@ -1,0 +1,31 @@
+$ kubectl get configmap -n dso202-a3-dev
+NAME                    DATA   AGE
+app-config-4t7ftdh5gf   7      14m
+app-config-6d87g92896   7      15m
+db-config-29m6t646t6    1      15m
+kube-root-ca.crt        1      15m
+$ kubectl kustomize kustomize/overlays/dev | grep -c app-config-6d87g92896
+0
+$ kubectl delete configmap app-config-6d87g92896 -n dso202-a3-dev
+configmap "app-config-6d87g92896" deleted from dso202-a3-dev namespace
+$ kubectl delete -k kustomize/overlays/dev --dry-run=server
+namespace "dso202-a3-dev" deleted (server dry run)
+resourcequota "ns-quota" deleted from dso202-a3-dev namespace (server dry run)
+serviceaccount "app-viewer" deleted from dso202-a3-dev namespace (server dry run)
+serviceaccount "backend-sa" deleted from dso202-a3-dev namespace (server dry run)
+serviceaccount "db-sa" deleted from dso202-a3-dev namespace (server dry run)
+serviceaccount "frontend-sa" deleted from dso202-a3-dev namespace (server dry run)
+role.rbac.authorization.k8s.io "app-reader" deleted from dso202-a3-dev namespace (server dry run)
+rolebinding.rbac.authorization.k8s.io "app-viewer-binding" deleted from dso202-a3-dev namespace (server dry run)
+configmap "app-config-4t7ftdh5gf" deleted from dso202-a3-dev namespace (server dry run)
+configmap "db-config-29m6t646t6" deleted from dso202-a3-dev namespace (server dry run)
+secret "db-credentials-8km6k6h8b5" deleted from dso202-a3-dev namespace (server dry run)
+secret "tasktracker-tls-ctctthhc2k" deleted from dso202-a3-dev namespace (server dry run)
+service "backend-svc" deleted from dso202-a3-dev namespace (server dry run)
+service "db-svc" deleted from dso202-a3-dev namespace (server dry run)
+service "frontend-svc" deleted from dso202-a3-dev namespace (server dry run)
+limitrange "ns-limits" deleted from dso202-a3-dev namespace (server dry run)
+deployment.apps "backend-deployment" deleted from dso202-a3-dev namespace (server dry run)
+deployment.apps "frontend-deployment" deleted from dso202-a3-dev namespace (server dry run)
+statefulset.apps "db" deleted from dso202-a3-dev namespace (server dry run)
+ingress.networking.k8s.io "task-tracker-ingress" deleted from dso202-a3-dev namespace (server dry run)

@@ -1,0 +1,36 @@
+{{- /*
+tests/test-api.yaml - run only by "helm test" (hook: test). Exit 0 = pass.
+Uses the frontend image (nginx:alpine, has wget) so no extra image is pulled.
+Checks: frontend serves the page, backend reports the database connected,
+and the task list returns JSON.
+*/}}
+apiVersion: v1
+kind: Pod
+metadata:
+  name: {{ include "task-tracker.fullname" . }}-test-api
+  labels:
+    {{- include "task-tracker.labels" (dict "ctx" . "component" "test") | nindent 4 }}
+  annotations:
+    helm.sh/hook: test
+    helm.sh/hook-delete-policy: before-hook-creation
+spec:
+  restartPolicy: Never
+  automountServiceAccountToken: false
+  containers:
+    - name: test
+      image: {{ include "task-tracker.image" (dict "ctx" . "tier" "frontend") | quote }}
+      imagePullPolicy: {{ .Values.image.pullPolicy }}
+      command:
+        - sh
+        - -c
+        - |
+          set -e
+          echo -n "frontend: "; wget -qO- http://{{ include "task-tracker.frontendName" . }}:8080/ | grep -o "<title>.*</title>"
+          STATUS=$(wget -qO- http://{{ include "task-tracker.backendName" . }}:8080/api/status)
+          echo "status:   $STATUS"; echo "$STATUS" | grep -q '"connected"'
+          COUNT=$(wget -qO- http://{{ include "task-tracker.backendName" . }}:8080/api/tasks | grep -o '"id":' | wc -l)
+          echo "tasks:    $COUNT returned"
+          echo "all checks passed"
+      resources:
+        requests: {cpu: 10m, memory: 16Mi}
+        limits: {cpu: 50m, memory: 32Mi}
