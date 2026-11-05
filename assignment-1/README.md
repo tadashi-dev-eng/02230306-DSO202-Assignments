@@ -4,7 +4,8 @@
 ## Repository Structure
 
 ```
-.
+assignment-1/
+├── Assignment1-report.md      # this report
 ├── 00-namespace.yaml          # Task 1 - namespace
 ├── 01-configmap.yaml          # Task 2 - non-sensitive config (DB_*, POSTGRES_DB, BACKEND_URL ...)
 ├── 02-secret.yaml             # Task 2 - credentials (DB_USER/PASSWORD, POSTGRES_USER/PASSWORD)
@@ -21,12 +22,14 @@
 │   ├── deployment.yaml
 │   └── service.yaml           #   NodePort 30081
 ├── evidence/                  # Task 7 - full, unedited terminal transcripts
-└── assets/                    # screenshots
+├── assets/                    # screenshots
+└── Assignment-1-app-code/     # app source provided with the brief (images built from this)
 ```
 
 Files are numbered (`00-`, `01-`, `02-`) so that `kubectl apply` order is obvious: the namespace must exist before anything is created in it, and the ConfigMap/Secret must exist before Pods that reference them start.
 
 ```bash
+cd assignment-1
 kubectl apply -f 00-namespace.yaml
 kubectl apply -f quota.yaml
 kubectl apply -f 01-configmap.yaml -f 02-secret.yaml

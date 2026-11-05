@@ -1,0 +1,40 @@
+# 2.3 RBAC - least-privilege identity for a CD pipeline: may create and change the
+# app's Deployments, Services, ConfigMaps and Ingress in this namespace only.
+# No "delete", no Secrets, no StatefulSet (database changes stay with an admin).
+# "patch" is required because `kubectl apply` PATCHes objects that already exist.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: deployer
+  namespace: dso202-assignment-02
+  labels: {app: task-tracker}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: deployer-role
+  namespace: dso202-assignment-02
+rules:
+- apiGroups: ["apps"]
+  resources: ["deployments"]
+  verbs: ["get", "list", "watch", "create", "update", "patch"]
+- apiGroups: [""]
+  resources: ["services", "configmaps"]
+  verbs: ["get", "list", "watch", "create", "update", "patch"]
+- apiGroups: ["networking.k8s.io"]
+  resources: ["ingresses"]
+  verbs: ["get", "list", "watch", "create", "update", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: deployer-binding
+  namespace: dso202-assignment-02
+subjects:
+- kind: ServiceAccount
+  name: deployer
+  namespace: dso202-assignment-02
+roleRef:
+  kind: Role
+  name: deployer-role
+  apiGroup: rbac.authorization.k8s.io

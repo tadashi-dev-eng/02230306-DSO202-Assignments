@@ -1,0 +1,17 @@
+$ kubectl apply -f 00-namespace.yaml -f 03-quota.yaml -f 01-configmap.yaml -f 02-secret.yaml -f 04-serviceaccounts.yaml
+namespace/dso202-assignment-02 created
+resourcequota/ns-quota created
+limitrange/ns-limits created
+configmap/app-config created
+secret/app-secret created
+serviceaccount/frontend-sa created
+serviceaccount/backend-sa created
+serviceaccount/db-sa created
+$ kubectl apply -f database/
+service/db-svc created
+statefulset.apps/db created
+$ kubectl apply -f backend/ -f frontend/
+deployment.apps/backend-deployment created
+service/backend-svc created
+deployment.apps/frontend-deployment created
+service/frontend-svc created

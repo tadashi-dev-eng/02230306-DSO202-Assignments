@@ -1,0 +1,21 @@
+# Non-sensitive configuration. Changes from Assignment 1 are marked "A2".
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  namespace: dso202-assignment-02
+  labels:
+    app: task-tracker
+data:
+  # A2 (2.1): stable per-Pod DNS name given by the StatefulSet + headless Service.
+  # Always points at ordinal 0, even after the Pod is rescheduled.
+  DB_HOST: "db-0.db-svc"
+  DB_PORT: "5432"
+  DB_NAME: "taskdb"
+  APP_PORT: "8080"
+  CORS_ORIGIN: "https://tasktracker.local"   # A2: one known origin instead of "*"
+  POSTGRES_DB: "taskdb"
+  # A2 (2.2): the browser now reaches the API through the same Ingress host that
+  # served the page, so a relative base URL is used: "./api/tasks" -> /api/tasks.
+  # (The image's entrypoint replaces an empty value with a default, hence ".")
+  BACKEND_URL: "."

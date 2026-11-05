@@ -1,0 +1,13 @@
+$ kubectl get pods -n dso202-assignment-02 -l tier=database -o wide --watch
+NAME   READY   STATUS    RESTARTS   AGE   IP            NODE            NOMINATED NODE   READINESS GATES
+db-0   1/1     Running   0          69s   10.244.1.18   worker-node-2   <none>           <none>
+db-0   1/1     Terminating   0          71s   10.244.1.18   worker-node-2   <none>           <none>
+db-0   1/1     Terminating   0          71s   10.244.1.18   worker-node-2   <none>           <none>
+db-0   0/1     Completed     0          72s   10.244.1.18   worker-node-2   <none>           <none>
+db-0   0/1     Completed     0          72s   10.244.1.18   worker-node-2   <none>           <none>
+db-0   0/1     Completed     0          72s   10.244.1.18   worker-node-2   <none>           <none>
+db-0   0/1     Pending       0          0s    <none>        <none>          <none>           <none>
+db-0   0/1     Pending       0          0s    <none>        worker-node-2   <none>           <none>
+db-0   0/1     ContainerCreating   0          0s    <none>        worker-node-2   <none>           <none>
+db-0   0/1     ContainerCreating   0          1s    <none>        worker-node-2   <none>           <none>
+db-0   1/1     Running             0          1s    10.244.1.19   worker-node-2   <none>           <none>

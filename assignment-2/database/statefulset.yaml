@@ -1,0 +1,69 @@
+# 2.1 StatefulSet - replaces Assignment 1's Deployment + standalone PVC.
+# replicas stays at 1: the issued postgres image has no replication logic, so a
+# second replica would be an independent, empty database (see README 2.1).
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: db
+  namespace: dso202-assignment-02
+  labels:
+    tier: database
+    app: task-tracker
+spec:
+  serviceName: db-svc                  # must name the headless Service
+  replicas: 1
+  podManagementPolicy: OrderedReady
+  selector:
+    matchLabels:
+      tier: database
+      app: task-tracker
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      partition: 0
+  persistentVolumeClaimRetentionPolicy:
+    whenDeleted: Retain                # keep data-db-0 if the StatefulSet is deleted
+    whenScaled: Retain                 # keep data-db-N if replicas are reduced
+  template:
+    metadata:
+      labels:
+        tier: database
+        app: task-tracker
+    spec:
+      serviceAccountName: db-sa
+      automountServiceAccountToken: false
+      containers:
+      - name: postgres
+        image: sarojsanyasi/dso202-db:1.0
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 5432
+          name: postgres
+        env:
+        - name: POSTGRES_DB
+          valueFrom:
+            configMapKeyRef: {name: app-config, key: POSTGRES_DB}
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef: {name: app-secret, key: POSTGRES_USER}
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef: {name: app-secret, key: POSTGRES_PASSWORD}
+        resources:
+          requests: {cpu: 250m, memory: 256Mi}
+          limits: {cpu: "1", memory: 512Mi}
+        volumeMounts:
+        - name: data
+          mountPath: /var/lib/postgresql/data
+  volumeClaimTemplates:                # one PVC per replica: data-db-0, data-db-1, ...
+  - metadata:
+      name: data
+      labels:
+        tier: database
+        app: task-tracker
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      storageClassName: standard
+      resources:
+        requests:
+          storage: 1Gi

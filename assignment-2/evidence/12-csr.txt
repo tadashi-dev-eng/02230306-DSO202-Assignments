@@ -1,0 +1,21 @@
+$ openssl genrsa -out tadashi.key 2048
+$ openssl req -new -key tadashi.key -out tadashi.csr -subj "/CN=tadashi/O=dev-team"
+$ openssl req -in tadashi.csr -noout -subject
+subject=CN=tadashi, O=dev-team
+$ cat <<EOF | kubectl apply -f -        # CertificateSigningRequest, signer kube-apiserver-client, usages: client auth
+certificatesigningrequest.certificates.k8s.io/tadashi created
+$ kubectl certificate approve tadashi
+certificatesigningrequest.certificates.k8s.io/tadashi approved
+$ kubectl get csr tadashi
+NAME      AGE   SIGNERNAME                            REQUESTOR          REQUESTEDDURATION   CONDITION
+tadashi   0s    kubernetes.io/kube-apiserver-client   kubernetes-admin   7d                  Approved,Issued
+$ kubectl get csr tadashi -o jsonpath='{.status.certificate}' | base64 -d > tadashi.crt
+$ openssl x509 -in tadashi.crt -noout -subject -issuer -dates
+subject=O=dev-team, CN=tadashi
+issuer=CN=kubernetes
+notBefore=Nov  5 16:31:49 2026 GMT
+notAfter=Nov 12 16:31:49 2026 GMT
+$ kubectl config set-credentials tadashi --client-certificate=tadashi.crt --client-key=tadashi.key --embed-certs=true
+User "tadashi" set.
+$ kubectl config set-context tadashi-dev --cluster=kind-dso202 --user=tadashi --namespace=dso202-assignment-02
+Context "tadashi-dev" created.

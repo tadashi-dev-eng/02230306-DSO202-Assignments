@@ -1,0 +1,25 @@
+# 2.3 / 2.4 - Aggregated ClusterRoles. The labels below make the API server merge
+# these rules into the built-in "view" and "edit" ClusterRoles automatically, so
+# anyone already bound to view/edit (e.g. the dev-team group) can see TaskTrackers
+# without the built-in roles ever being edited by hand.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: tasktracker-view
+  labels:
+    rbac.authorization.k8s.io/aggregate-to-view: "true"
+rules:
+- apiGroups: ["apps.dso202.io"]
+  resources: ["tasktrackers", "tasktrackers/status"]
+  verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: tasktracker-edit
+  labels:
+    rbac.authorization.k8s.io/aggregate-to-edit: "true"
+rules:
+- apiGroups: ["apps.dso202.io"]
+  resources: ["tasktrackers"]
+  verbs: ["create", "update", "patch", "delete"]

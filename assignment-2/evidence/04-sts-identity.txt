@@ -1,0 +1,25 @@
+$ kubectl get statefulset,pod,pvc -n dso202-assignment-02 -l tier=database
+NAME                  READY   AGE
+statefulset.apps/db   1/1     53s
+
+NAME       READY   STATUS    RESTARTS   AGE
+pod/db-0   1/1     Running   0          53s
+
+NAME                              STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
+persistentvolumeclaim/data-db-0   Bound    pvc-7fd6674b-8150-4c26-8da3-f04b41deb06f   1Gi        RWO            standard       <unset>                 53s
+$ kubectl get pod db-0 -n dso202-assignment-02 -o jsonpath='{.spec.hostname}.{.spec.subdomain}{"\n"}'
+db-0.db-svc
+$ kubectl exec -n dso202-assignment-02 deploy/frontend-deployment -- nslookup db-0.db-svc.dso202-assignment-02.svc.cluster.local
+Server:		10.96.0.10
+Address:	10.96.0.10:53
+
+Name:	db-0.db-svc.dso202-assignment-02.svc.cluster.local
+Address: 10.244.1.18
+
+
+$ kubectl exec -n dso202-assignment-02 deploy/frontend-deployment -- curl -s http://backend-svc:8080/api/status
+{"status":"ok","db":"connected"}
+
+$ kubectl exec -n dso202-assignment-02 deploy/frontend-deployment -- curl -s -X POST http://backend-svc:8080/api/tasks -H 'Content-Type: application/json' -d '{"title":"StatefulSet persistence","description":"must survive db-0 and StatefulSet deletion"}'
+{"id":4,"title":"StatefulSet persistence","description":"must survive db-0 and StatefulSet deletion","status":"pending","created_at":"2026-11-05T16:34:10.552Z"}
+

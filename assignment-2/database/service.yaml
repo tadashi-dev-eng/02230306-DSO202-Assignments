@@ -1,0 +1,19 @@
+# Headless Service governing the StatefulSet (spec.serviceName). Gives each Pod a
+# stable DNS record: db-0.db-svc.dso202-assignment-02.svc.cluster.local
+apiVersion: v1
+kind: Service
+metadata:
+  name: db-svc
+  namespace: dso202-assignment-02
+  labels:
+    tier: database
+    app: task-tracker
+spec:
+  clusterIP: None
+  selector:
+    tier: database
+    app: task-tracker
+  ports:
+  - name: postgres
+    port: 5432
+    targetPort: 5432

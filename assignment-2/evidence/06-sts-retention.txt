@@ -1,0 +1,18 @@
+$ kubectl get statefulset db -n dso202-assignment-02 -o jsonpath='{.spec.persistentVolumeClaimRetentionPolicy}{"\n"}'
+{"whenDeleted":"Retain","whenScaled":"Retain"}
+$ kubectl delete statefulset db -n dso202-assignment-02
+statefulset.apps "db" deleted from dso202-assignment-02 namespace
+$ kubectl get statefulset,pods -n dso202-assignment-02 -l tier=database
+No resources found in dso202-assignment-02 namespace.
+$ kubectl get pvc -n dso202-assignment-02
+NAME        STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
+data-db-0   Bound    pvc-7fd6674b-8150-4c26-8da3-f04b41deb06f   1Gi        RWO            standard       <unset>                 2m1s
+$ kubectl apply -f database/statefulset.yaml
+statefulset.apps/db created
+$ kubectl wait -n dso202-assignment-02 --for=condition=Ready pod/db-0 --timeout=180s
+pod/db-0 condition met
+$ kubectl logs db-0 -n dso202-assignment-02 | grep -E 'Skipping initialization|ready to accept'
+PostgreSQL Database directory appears to contain a database; Skipping initialization
+$ kubectl exec -n dso202-assignment-02 deploy/frontend-deployment -- curl -s http://backend-svc:8080/api/tasks/4
+{"id":4,"title":"StatefulSet persistence","description":"must survive db-0 and StatefulSet deletion","status":"pending","created_at":"2026-11-05T16:34:10.552Z"}
+

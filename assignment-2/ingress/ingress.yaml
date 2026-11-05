@@ -1,0 +1,39 @@
+# 2.2 Ingress - one HTTPS entry point, path-based routing, TLS terminated at the
+# NGINX Ingress controller. Requires the "tasktracker-tls" Secret (kubernetes.io/tls),
+# created from a self-signed certificate - see README "TLS certificate".
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: task-tracker-ingress
+  namespace: dso202-assignment-02
+  labels:
+    app: task-tracker
+  annotations:
+    # Controller-specific (NGINX) behaviour, configured through annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"        # plain HTTP -> 308 to HTTPS
+    nginx.ingress.kubernetes.io/proxy-body-size: "1m"       # cap request bodies to the API
+    # No rewrite-target: the backend expects the /api prefix, so the path is kept as-is.
+spec:
+  ingressClassName: nginx           # not the deprecated kubernetes.io/ingress.class annotation
+  tls:
+  - hosts:
+    - tasktracker.local
+    secretName: tasktracker-tls
+  rules:
+  - host: tasktracker.local
+    http:
+      paths:
+      - path: /api                  # Prefix: /api, /api/tasks, /api/tasks/4 ... (not /apiv2)
+        pathType: Prefix
+        backend:
+          service:
+            name: backend-svc
+            port:
+              number: 8080
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: frontend-svc
+            port:
+              number: 8080

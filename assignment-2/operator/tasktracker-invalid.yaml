@@ -1,0 +1,13 @@
+# Deliberately invalid - used to show the CRD's OpenAPI schema rejecting bad input
+# at the API server (never stored in etcd).
+apiVersion: apps.dso202.io/v1alpha1
+kind: TaskTracker
+metadata:
+  name: bad-tracker
+  namespace: dso202-assignment-02
+spec:
+  imageTag: latest          # violates the semantic-version pattern
+  backend:
+    replicas: 10            # above maximum: 5
+  ingress:
+    host: tasktracker.local

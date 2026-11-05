@@ -1,0 +1,18 @@
+# ClusterIP - reached from outside only through the Ingress (/api).
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-svc
+  namespace: dso202-assignment-02
+  labels:
+    tier: backend
+    app: task-tracker
+spec:
+  type: ClusterIP
+  selector:
+    tier: backend
+    app: task-tracker
+  ports:
+  - name: http
+    port: 8080
+    targetPort: 8080

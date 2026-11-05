@@ -1,0 +1,23 @@
+$ kubectl apply -f rbac/
+serviceaccount/deployer created
+role.rbac.authorization.k8s.io/deployer-role created
+rolebinding.rbac.authorization.k8s.io/deployer-binding created
+rolebinding.rbac.authorization.k8s.io/dev-team-view created
+role.rbac.authorization.k8s.io/pod-debugger created
+rolebinding.rbac.authorization.k8s.io/tadashi-pod-debugger created
+serviceaccount/app-viewer created
+role.rbac.authorization.k8s.io/app-reader created
+rolebinding.rbac.authorization.k8s.io/app-viewer-binding created
+$ VIEW=system:serviceaccount:dso202-assignment-02:app-viewer
+$ kubectl auth can-i list pods -n dso202-assignment-02 --as=$VIEW
+yes
+$ kubectl auth can-i list statefulsets.apps -n dso202-assignment-02 --as=$VIEW
+yes
+$ kubectl auth can-i list ingresses.networking.k8s.io -n dso202-assignment-02 --as=$VIEW
+yes
+$ kubectl auth can-i get secrets -n dso202-assignment-02 --as=$VIEW
+no
+$ kubectl auth can-i delete pods -n dso202-assignment-02 --as=$VIEW
+no
+$ kubectl auth can-i list pods -n dso202-assignment-01 --as=$VIEW
+no

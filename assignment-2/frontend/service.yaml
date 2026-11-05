@@ -1,0 +1,18 @@
+# A2 (2.2): ClusterIP instead of NodePort - the Ingress is now the single entry point.
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-svc
+  namespace: dso202-assignment-02
+  labels:
+    tier: frontend
+    app: task-tracker
+spec:
+  type: ClusterIP
+  selector:
+    tier: frontend
+    app: task-tracker
+  ports:
+  - name: http
+    port: 8080
+    targetPort: 8080

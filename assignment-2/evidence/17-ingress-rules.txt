@@ -1,0 +1,11 @@
+# 5. pathType Prefix: /apiv2 is NOT under /api, so it falls through to / (frontend)
+$ curl -s -o /dev/null -w '%{http_code} %{content_type}\n' $H --cacert ingress/tasktracker.crt https://tasktracker.local:8443/apiv2
+200 text/html
+$ curl -s -o /dev/null -w '%{http_code} %{content_type}\n' $H --cacert ingress/tasktracker.crt https://tasktracker.local:8443/api/tasks/4
+200 application/json; charset=utf-8
+# 6. name-based virtual hosting: an unknown Host header matches no rule
+$ curl -sk -o /dev/null -w '%{http_code}\n' -H 'Host: other.local' https://127.0.0.1:8443/
+404
+# 7. proxy-body-size annotation (1m): a 2 MB request body is refused at the Ingress
+$ head -c 2000000 /dev/zero | tr '\0' a > big.txt; curl -s -o /dev/null -w '%{http_code}\n' $H --cacert ingress/tasktracker.crt -X POST -H 'Content-Type: application/json' --data-binary @big.txt https://tasktracker.local:8443/api/tasks
+413

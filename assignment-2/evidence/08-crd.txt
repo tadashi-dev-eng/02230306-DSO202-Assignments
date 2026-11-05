@@ -1,0 +1,19 @@
+$ kubectl apply -f operator/tasktracker.yaml
+error: resource mapping not found for name: "dso202-tasks" namespace: "dso202-assignment-02" from "operator/tasktracker.yaml": no matches for kind "TaskTracker" in version "apps.dso202.io/v1alpha1"
+ensure CRDs are installed first
+$ kubectl apply -f operator/crd.yaml
+customresourcedefinition.apiextensions.k8s.io/tasktrackers.apps.dso202.io created
+$ kubectl wait --for=condition=Established crd/tasktrackers.apps.dso202.io --timeout=60s
+customresourcedefinition.apiextensions.k8s.io/tasktrackers.apps.dso202.io condition met
+$ kubectl api-resources --api-group=apps.dso202.io
+NAME           SHORTNAMES   APIVERSION                NAMESPACED   KIND
+tasktrackers   tt           apps.dso202.io/v1alpha1   true         TaskTracker
+$ kubectl apply -f operator/tasktracker.yaml
+tasktracker.apps.dso202.io/dso202-tasks created
+$ kubectl get tasktrackers -n dso202-assignment-02
+NAME           IMAGE-TAG   BACKEND   HOST                PHASE   AGE
+dso202-tasks   1.0         1         tasktracker.local           0s
+$ kubectl apply -f operator/tasktracker-invalid.yaml
+The TaskTracker "bad-tracker" is invalid: 
+* spec.backend.replicas: Invalid value: 10: spec.backend.replicas in body should be less than or equal to 5
+* spec.imageTag: Invalid value: "latest": spec.imageTag in body should match '^[0-9]+\.[0-9]+(\.[0-9]+)?$'

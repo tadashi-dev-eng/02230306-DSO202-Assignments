@@ -1,0 +1,33 @@
+$ DEP=system:serviceaccount:dso202-assignment-02:deployer
+# Pitfall from notes 2.3.8: a role with 'update' but not 'patch'
+$ kubectl patch role deployer-role -n dso202-assignment-02 --type=json -p '[{"op":"remove","path":"/rules/0/verbs/5"}]'
+role.rbac.authorization.k8s.io/deployer-role patched
+$ kubectl annotate deployment backend-deployment -n dso202-assignment-02 release=a2 --overwrite --as=$DEP
+Error from server (Forbidden): deployments.apps "backend-deployment" is forbidden: User "system:serviceaccount:dso202-assignment-02:deployer" cannot patch resource "deployments" in API group "apps" in the namespace "dso202-assignment-02"
+$ kubectl auth can-i update deployments -n dso202-assignment-02 --as=$DEP
+yes
+$ kubectl auth can-i patch deployments -n dso202-assignment-02 --as=$DEP
+no
+$ kubectl describe role deployer-role -n dso202-assignment-02 | sed -n '/PolicyRule/,$p'
+PolicyRule:
+  Resources                    Non-Resource URLs  Resource Names  Verbs
+  ---------                    -----------------  --------------  -----
+  configmaps                   []                 []              [get list watch create update patch]
+  services                     []                 []              [get list watch create update patch]
+  ingresses.networking.k8s.io  []                 []              [get list watch create update patch]
+  deployments.apps             []                 []              [get list watch create update]
+# Fix: re-apply the committed role, which grants exactly the missing verb
+$ kubectl apply -f rbac/deployer.yaml
+serviceaccount/deployer unchanged
+role.rbac.authorization.k8s.io/deployer-role configured
+rolebinding.rbac.authorization.k8s.io/deployer-binding unchanged
+$ kubectl annotate deployment backend-deployment -n dso202-assignment-02 release=a2 --overwrite --as=$DEP
+deployment.apps/backend-deployment annotated
+$ kubectl auth can-i delete deployments -n dso202-assignment-02 --as=$DEP
+no
+$ kubectl auth can-i get secrets -n dso202-assignment-02 --as=$DEP
+no
+$ kubectl auth can-i patch statefulsets.apps -n dso202-assignment-02 --as=$DEP
+no
+$ kubectl auth can-i patch deployments -n dso202-assignment-01 --as=$DEP
+no

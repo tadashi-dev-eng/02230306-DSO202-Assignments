@@ -1,0 +1,11 @@
+$ openssl req -x509 -nodes -newkey rsa:2048 -days 30 -keyout ingress/tasktracker.key -out ingress/tasktracker.crt -subj /CN=tasktracker.local/O=DSO202 -addext subjectAltName=DNS:tasktracker.local
+$ openssl x509 -in ingress/tasktracker.crt -noout -subject -ext subjectAltName -enddate
+subject=CN=tasktracker.local, O=DSO202
+X509v3 Subject Alternative Name: 
+    DNS:tasktracker.local
+notAfter=Dec  5 16:37:20 2026 GMT
+$ kubectl create secret tls tasktracker-tls -n dso202-assignment-02 --cert=ingress/tasktracker.crt --key=ingress/tasktracker.key
+secret/tasktracker-tls created
+$ kubectl get secret tasktracker-tls -n dso202-assignment-02
+NAME              TYPE                DATA   AGE
+tasktracker-tls   kubernetes.io/tls   2      0s

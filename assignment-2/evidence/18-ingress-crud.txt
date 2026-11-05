@@ -1,0 +1,14 @@
+# Full CRUD cycle through the Ingress (HTTPS -> NGINX -> backend-svc -> db-0)
+$ curl -s $H --cacert ingress/tasktracker.crt -X POST https://tasktracker.local:8443/api/tasks -H 'Content-Type: application/json' -d '{"title":"Created through Ingress","description":"HTTPS via NGINX"}'
+{"id":5,"title":"Created through Ingress","description":"HTTPS via NGINX","status":"pending","created_at":"2026-11-05T16:41:29.922Z"}
+$ curl -s $H --cacert ingress/tasktracker.crt -X PUT https://tasktracker.local:8443/api/tasks/5 -H 'Content-Type: application/json' -d '{"title":"Created through Ingress","description":"HTTPS via NGINX","status":"in_progress"}'
+{"id":5,"title":"Created through Ingress","description":"HTTPS via NGINX","status":"in_progress","created_at":"2026-11-05T16:41:29.922Z"}
+$ curl -s $H --cacert ingress/tasktracker.crt https://tasktracker.local:8443/api/tasks/5
+{"id":5,"title":"Created through Ingress","description":"HTTPS via NGINX","status":"in_progress","created_at":"2026-11-05T16:41:29.922Z"}
+$ curl -s -o /dev/null -w 'HTTP %{http_code}\n' $H --cacert ingress/tasktracker.crt -X DELETE https://tasktracker.local:8443/api/tasks/5
+HTTP 204
+$ curl -s -w '\nHTTP %{http_code}\n' $H --cacert ingress/tasktracker.crt https://tasktracker.local:8443/api/tasks/5
+{"error":"task not found"}
+HTTP 404
+$ curl -s $H --cacert ingress/tasktracker.crt -X POST https://tasktracker.local:8443/api/tasks -H 'Content-Type: application/json' -d '{"title":"Ingress + TLS + StatefulSet","description":"Assignment 2 demo task"}'
+{"id":6,"title":"Ingress + TLS + StatefulSet","description":"Assignment 2 demo task","status":"pending","created_at":"2026-11-05T16:41:30.464Z"}

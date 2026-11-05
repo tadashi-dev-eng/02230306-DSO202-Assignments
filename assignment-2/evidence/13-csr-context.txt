@@ -1,0 +1,29 @@
+$ kubectl config get-contexts
+CURRENT   NAME          CLUSTER       AUTHINFO      NAMESPACE
+*         kind-dso202   kind-dso202   kind-dso202   
+          tadashi-dev   kind-dso202   tadashi       dso202-assignment-02
+$ kubectl --context=tadashi-dev auth whoami
+ATTRIBUTE                                           VALUE
+Username                                            tadashi
+Groups                                              [dev-team system:authenticated]
+Extra: authentication.kubernetes.io/credential-id   [X509SHA256=67d9b022eeafd0b8eb68fd0e2e3fa3240dc3faccec34525bcf909d8ab14050e1]
+$ kubectl --context=tadashi-dev get pods
+NAME                                   READY   STATUS    RESTARTS       AGE
+backend-deployment-754b9864d5-bgs8v    1/1     Running   2 (110s ago)   3m47s
+db-0                                   1/1     Running   0              106s
+frontend-deployment-548cb5bcf6-dl9lw   1/1     Running   0              3m47s
+$ kubectl --context=tadashi-dev get tasktrackers
+NAME           IMAGE-TAG   BACKEND   HOST                PHASE   AGE
+dso202-tasks   1.0         1         tasktracker.local           44s
+$ kubectl --context=tadashi-dev logs statefulset/db --tail=1
+2026-11-05 16:35:16.482 UTC [1] LOG:  database system is ready to accept connections
+$ kubectl --context=tadashi-dev exec deploy/frontend-deployment -- id
+uid=101(nginx) gid=101(nginx) groups=101(nginx)
+$ kubectl --context=tadashi-dev get secrets
+Error from server (Forbidden): secrets is forbidden: User "tadashi" cannot list resource "secrets" in API group "" in the namespace "dso202-assignment-02"
+$ kubectl --context=tadashi-dev delete deployment frontend-deployment
+Error from server (Forbidden): deployments.apps "frontend-deployment" is forbidden: User "tadashi" cannot delete resource "deployments" in API group "apps" in the namespace "dso202-assignment-02"
+$ kubectl --context=tadashi-dev get pods -n kube-system
+Error from server (Forbidden): pods is forbidden: User "tadashi" cannot list resource "pods" in API group "" in the namespace "kube-system"
+$ kubectl --context=tadashi-dev get nodes
+Error from server (Forbidden): nodes is forbidden: User "tadashi" cannot list resource "nodes" in API group "" at the cluster scope

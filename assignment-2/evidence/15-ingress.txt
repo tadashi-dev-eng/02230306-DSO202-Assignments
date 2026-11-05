@@ -1,0 +1,26 @@
+$ kubectl apply -f ingress/ingress.yaml
+ingress.networking.k8s.io/task-tracker-ingress created
+$ kubectl get ingress -n dso202-assignment-02
+NAME                   CLASS   HOSTS               ADDRESS     PORTS     AGE
+task-tracker-ingress   nginx   tasktracker.local   localhost   80, 443   108s
+$ kubectl describe ingress task-tracker-ingress -n dso202-assignment-02
+Name:             task-tracker-ingress
+Labels:           app=task-tracker
+Namespace:        dso202-assignment-02
+Address:          localhost
+Ingress Class:    nginx
+Default backend:  <default>
+TLS:
+  tasktracker-tls terminates tasktracker.local
+Rules:
+  Host               Path  Backends
+  ----               ----  --------
+  tasktracker.local  
+                     /api   backend-svc:8080 (10.244.2.16:8080)
+                     /      frontend-svc:8080 (10.244.2.17:8080)
+Annotations:         nginx.ingress.kubernetes.io/proxy-body-size: 1m
+                     nginx.ingress.kubernetes.io/ssl-redirect: true
+Events:
+  Type    Reason  Age                 From                      Message
+  ----    ------  ----                ----                      -------
+  Normal  Sync    85s (x2 over 108s)  nginx-ingress-controller  Scheduled for sync

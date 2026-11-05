@@ -1,0 +1,19 @@
+$ kubectl get tt dso202-tasks -n dso202-assignment-02 -o jsonpath='{.spec}{"\n"}'
+{"backend":{"replicas":1},"database":{"storageSize":"1Gi"},"frontend":{"replicas":1},"imageTag":"1.0","ingress":{"host":"tasktracker.local","tls":true}}
+$ kubectl get tt dso202-tasks -n dso202-assignment-02 -o jsonpath='status={.status}{"\n"}'
+status=
+$ kubectl get all -n dso202-assignment-02 -l app.kubernetes.io/managed-by=tasktracker-operator
+No resources found in dso202-assignment-02 namespace.
+$ kubectl apply -f operator/aggregate-clusterrole.yaml
+clusterrole.rbac.authorization.k8s.io/tasktracker-view created
+clusterrole.rbac.authorization.k8s.io/tasktracker-edit created
+$ kubectl get clusterrole view -o yaml | grep -B2 -A6 apps.dso202.io
+  - watch
+- apiGroups:
+  - apps.dso202.io
+  resources:
+  - tasktrackers
+  - tasktrackers/status
+  verbs:
+  - get
+  - list

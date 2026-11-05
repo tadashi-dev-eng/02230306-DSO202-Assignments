@@ -1,0 +1,65 @@
+# 2.4 Operators - a CRD that describes a whole Task Tracker installation in domain
+# terms. The schema enforces the Assignment 1 rules at the API server itself:
+# semantic image tags only (no "latest"), bounded replica counts, valid storage size.
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: tasktrackers.apps.dso202.io
+spec:
+  group: apps.dso202.io
+  scope: Namespaced
+  names:
+    kind: TaskTracker
+    plural: tasktrackers
+    singular: tasktracker
+    shortNames: ["tt"]
+  versions:
+  - name: v1alpha1
+    served: true
+    storage: true
+    subresources:
+      status: {}                    # status written by a controller, separate from spec
+    additionalPrinterColumns:
+    - {name: Image-Tag, type: string, jsonPath: .spec.imageTag}
+    - {name: Backend, type: integer, jsonPath: .spec.backend.replicas}
+    - {name: Host, type: string, jsonPath: .spec.ingress.host}
+    - {name: Phase, type: string, jsonPath: .status.phase}
+    - {name: Age, type: date, jsonPath: .metadata.creationTimestamp}
+    schema:
+      openAPIV3Schema:
+        type: object
+        required: ["spec"]
+        properties:
+          spec:
+            type: object
+            required: ["imageTag", "ingress"]
+            properties:
+              imageTag:
+                type: string
+                pattern: '^[0-9]+\.[0-9]+(\.[0-9]+)?$'   # "1.0" ok, "latest" rejected
+              frontend:
+                type: object
+                properties:
+                  replicas: {type: integer, minimum: 1, maximum: 5, default: 1}
+              backend:
+                type: object
+                properties:
+                  replicas: {type: integer, minimum: 1, maximum: 5, default: 1}
+              database:
+                type: object
+                properties:
+                  storageSize:
+                    type: string
+                    pattern: '^[0-9]+(Mi|Gi)$'
+                    default: 1Gi
+              ingress:
+                type: object
+                required: ["host"]
+                properties:
+                  host: {type: string}
+                  tls: {type: boolean, default: true}
+          status:
+            type: object
+            properties:
+              phase: {type: string}
+              observedGeneration: {type: integer}

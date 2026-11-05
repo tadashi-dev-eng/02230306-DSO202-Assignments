@@ -1,0 +1,5 @@
+# Private keys, certificates and kubeconfigs are credentials - never commit them.
+*.key
+*.crt
+*.csr
+*.kubeconfig

@@ -1,0 +1,47 @@
+$ kubectl apply -f 00-namespace.yaml -f 03-quota.yaml -f 01-configmap.yaml -f 02-secret.yaml -f 04-serviceaccounts.yaml
+namespace/dso202-assignment-02 created
+resourcequota/ns-quota created
+limitrange/ns-limits created
+configmap/app-config created
+secret/app-secret created
+serviceaccount/frontend-sa created
+serviceaccount/backend-sa created
+serviceaccount/db-sa created
+$ kubectl apply -f database/
+service/db-svc created
+statefulset.apps/db created
+$ kubectl apply -f backend/ -f frontend/
+deployment.apps/backend-deployment created
+service/backend-svc created
+deployment.apps/frontend-deployment created
+service/frontend-svc created
+$ kubectl get statefulset,deploy,pods,svc,pvc,ingress -n dso202-assignment-02
+NAME                  READY   AGE
+statefulset.apps/db   1/1     6m39s
+
+NAME                                  READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/backend-deployment    1/1     1            1           8m40s
+deployment.apps/frontend-deployment   1/1     1            1           8m40s
+
+NAME                                       READY   STATUS    RESTARTS        AGE
+pod/backend-deployment-754b9864d5-bgs8v    1/1     Running   2 (6m43s ago)   8m40s
+pod/db-0                                   1/1     Running   0               6m39s
+pod/frontend-deployment-548cb5bcf6-dl9lw   1/1     Running   0               8m40s
+
+NAME                   TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)    AGE
+service/backend-svc    ClusterIP   10.96.107.115   <none>        8080/TCP   8m40s
+service/db-svc         ClusterIP   None            <none>        5432/TCP   8m40s
+service/frontend-svc   ClusterIP   10.96.182.197   <none>        8080/TCP   8m40s
+
+NAME                              STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
+persistentvolumeclaim/data-db-0   Bound    pvc-7fd6674b-8150-4c26-8da3-f04b41deb06f   1Gi        RWO            standard       <unset>                 8m40s
+
+NAME                                             CLASS   HOSTS               ADDRESS     PORTS     AGE
+ingress.networking.k8s.io/task-tracker-ingress   nginx   tasktracker.local   localhost   80, 443   88s
+$ kubectl describe resourcequota ns-quota -n dso202-assignment-02 | grep -E 'services|pods|requests.cpu|persistentvolumeclaims'
+persistentvolumeclaims  1      2
+pods                    3      8
+requests.cpu            400m   1
+services                3      4
+services.loadbalancers  0      0
+services.nodeports      0      0

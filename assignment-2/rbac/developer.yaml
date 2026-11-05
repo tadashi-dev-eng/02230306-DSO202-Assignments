@@ -1,0 +1,48 @@
+# 2.3 RBAC + CSR user (unit 2 practical). Subjects come from the x509 certificate:
+#   CN=tadashi   -> user  "tadashi"
+#   O=dev-team   -> group "dev-team"
+---
+# (a) Reuse the built-in, aggregated "view" ClusterRole for the whole dev-team group.
+#     Bound with a RoleBinding, so it applies ONLY inside this namespace.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: dev-team-view
+  namespace: dso202-assignment-02
+subjects:
+- kind: Group
+  name: dev-team
+  apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: ClusterRole
+  name: view
+  apiGroup: rbac.authorization.k8s.io
+---
+# (b) Extra rights for the individual user: debug and restart Pods (get logs, exec,
+#     delete a Pod so its controller recreates it). Still no Secrets, no Deployment edits.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: pod-debugger
+  namespace: dso202-assignment-02
+rules:
+- apiGroups: [""]
+  resources: ["pods", "pods/log"]
+  verbs: ["get", "list", "watch", "delete"]
+- apiGroups: [""]
+  resources: ["pods/exec"]
+  verbs: ["create"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: tadashi-pod-debugger
+  namespace: dso202-assignment-02
+subjects:
+- kind: User
+  name: tadashi                     # must match the certificate CN exactly
+  apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: Role
+  name: pod-debugger
+  apiGroup: rbac.authorization.k8s.io

@@ -1,0 +1,20 @@
+# One Custom Resource: the desired state of this assignment's deployment, expressed
+# in domain terms. Without an Operator watching this type, nothing acts on it.
+apiVersion: apps.dso202.io/v1alpha1
+kind: TaskTracker
+metadata:
+  name: dso202-tasks
+  namespace: dso202-assignment-02
+  labels:
+    app: task-tracker
+spec:
+  imageTag: "1.0"
+  frontend:
+    replicas: 1
+  backend:
+    replicas: 1
+  database:
+    storageSize: 1Gi
+  ingress:
+    host: tasktracker.local
+    tls: true
