@@ -1,0 +1,44 @@
+$ kubectl get pod,pvc -n dso202-assignment-01 -l tier=database
+NAME                                 READY   STATUS    RESTARTS   AGE
+pod/db-deployment-86c869fc49-ktsrm   1/1     Running   0          89s
+
+NAME                                 STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
+persistentvolumeclaim/postgres-pvc   Bound    pvc-13bf3bbd-1149-48dd-8b7a-4eea3fad7e9b   1Gi        RWO            standard       <unset>                 89s
+
+$ kubectl delete pod -n dso202-assignment-01 -l tier=database
+pod "db-deployment-86c869fc49-ktsrm" deleted from dso202-assignment-01 namespace
+
+$ kubectl wait -n dso202-assignment-01 --for=condition=Ready pod -l tier=database --timeout=120s
+pod/db-deployment-86c869fc49-vpkm7 condition met
+
+$ kubectl get pod,pvc -n dso202-assignment-01 -l tier=database
+NAME                                 READY   STATUS    RESTARTS   AGE
+pod/db-deployment-86c869fc49-vpkm7   1/1     Running   0          1s
+
+NAME                                 STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
+persistentvolumeclaim/postgres-pvc   Bound    pvc-13bf3bbd-1149-48dd-8b7a-4eea3fad7e9b   1Gi        RWO            standard       <unset>                 90s
+
+$ kubectl logs -n dso202-assignment-01 deploy/db-deployment | grep -E 'Skipping initialization|ready to accept'
+PostgreSQL Database directory appears to contain a database; Skipping initialization
+2026-11-05 15:35:35.090 UTC [1] LOG:  database system is ready to accept connections
+
+$ kubectl exec -n dso202-assignment-01 deploy/frontend-deployment -- curl -s http://backend-svc:8080/api/tasks/4
+{"id":4,"title":"Persistence check","description":"Created before backend pod deletion","status":"pending","created_at":"2026-11-05T15:34:39.304Z"}
+# Side effect observed: backend container restarted once when the DB pod was deleted
+$ kubectl get pods -n dso202-assignment-01 -l tier=backend
+NAME                                  READY   STATUS    RESTARTS      AGE
+backend-deployment-697d4658c7-pwmxz   1/1     Running   1 (70s ago)   94s
+
+$ kubectl logs -n dso202-assignment-01 deploy/backend-deployment --previous | head -7
+[db] connected
+[server] listening on :8080
+node:events:497
+      throw er; // Unhandled 'error' event
+      ^
+
+error: terminating connection due to administrator command
+
+$ kubectl logs -n dso202-assignment-01 deploy/backend-deployment
+[db] connected
+[server] listening on :8080
+

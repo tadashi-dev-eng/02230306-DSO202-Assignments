@@ -1,3 +1,4 @@
+# ClusterIP: reachable only from inside the cluster, never from the host.
 apiVersion: v1
 kind: Service
 metadata:
@@ -5,10 +6,13 @@ metadata:
   namespace: dso202-assignment-01
   labels:
     tier: backend
+    app: task-tracker
 spec:
   type: ClusterIP
   selector:
     tier: backend
+    app: task-tracker
   ports:
-  - port: 8080
+  - name: http
+    port: 8080
     targetPort: 8080

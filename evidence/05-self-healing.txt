@@ -1,0 +1,40 @@
+$ kubectl get pods -n dso202-assignment-01 -l tier=backend
+NAME                                  READY   STATUS    RESTARTS   AGE
+backend-deployment-697d4658c7-bsh72   1/1     Running   0          64s
+
+$ kubectl delete pod/backend-deployment-697d4658c7-bsh72 -n dso202-assignment-01
+pod "backend-deployment-697d4658c7-bsh72" deleted from dso202-assignment-01 namespace
+
+# (second terminal, started before the delete)
+$ kubectl get pods -n dso202-assignment-01 -l tier=backend --watch
+NAME                                  READY   STATUS    RESTARTS   AGE
+backend-deployment-697d4658c7-bsh72   1/1     Running   0          62s
+backend-deployment-697d4658c7-bsh72   1/1     Terminating   0          64s
+backend-deployment-697d4658c7-bsh72   1/1     Terminating   0          64s
+backend-deployment-697d4658c7-pwmxz   0/1     Pending       0          0s
+backend-deployment-697d4658c7-pwmxz   0/1     Pending       0          0s
+backend-deployment-697d4658c7-pwmxz   0/1     ContainerCreating   0          0s
+backend-deployment-697d4658c7-bsh72   0/1     Error               0          64s
+backend-deployment-697d4658c7-pwmxz   0/1     ContainerCreating   0          1s
+backend-deployment-697d4658c7-pwmxz   1/1     Running             0          1s
+backend-deployment-697d4658c7-bsh72   0/1     Error               0          65s
+backend-deployment-697d4658c7-bsh72   0/1     Error               0          65s
+
+$ kubectl get rs -n dso202-assignment-01 -l tier=backend
+NAME                            DESIRED   CURRENT   READY   AGE
+backend-deployment-697d4658c7   1         1         1       77s
+
+$ kubectl describe rs -n dso202-assignment-01 -l tier=backend | tail -5
+Events:
+  Type    Reason            Age   From                   Message
+  ----    ------            ----  ----                   -------
+  Normal  SuccessfulCreate  77s   replicaset-controller  Created pod: backend-deployment-697d4658c7-bsh72
+  Normal  SuccessfulCreate  13s   replicaset-controller  Created pod: backend-deployment-697d4658c7-pwmxz
+
+$ kubectl logs -n dso202-assignment-01 deploy/backend-deployment
+[db] connected
+[server] listening on :8080
+
+$ kubectl exec -n dso202-assignment-01 deploy/frontend-deployment -- curl -s http://backend-svc:8080/api/tasks/4
+{"id":4,"title":"Persistence check","description":"Created before backend pod deletion","status":"pending","created_at":"2026-11-05T15:34:39.304Z"}
+

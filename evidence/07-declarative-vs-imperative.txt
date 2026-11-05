@@ -1,0 +1,58 @@
+### Declarative
+$ kubectl apply -f backend/service.yaml
+service/backend-svc unchanged
+
+$ kubectl apply -f backend/service.yaml
+service/backend-svc unchanged
+
+$ kubectl diff -f backend/service.yaml ; echo "exit code: $? (0 = live object matches file)"
+exit code: 0 (0 = live object matches file)
+
+### Imperative equivalent
+$ kubectl expose deployment backend-deployment --name=backend-svc-imperative --type=ClusterIP --port=8080 --target-port=8080 -n dso202-assignment-01
+service/backend-svc-imperative exposed
+
+$ kubectl expose deployment backend-deployment --name=backend-svc-imperative --type=ClusterIP --port=8080 --target-port=8080 -n dso202-assignment-01
+Error from server (AlreadyExists): services "backend-svc-imperative" already exists
+
+$ kubectl get svc backend-svc backend-svc-imperative -n dso202-assignment-01 -o wide
+NAME                     TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)    AGE    SELECTOR
+backend-svc              ClusterIP   10.96.15.30    <none>        8080/TCP   2m3s   app=task-tracker,tier=backend
+backend-svc-imperative   ClusterIP   10.96.166.29   <none>        8080/TCP   5s     app=task-tracker,tier=backend
+
+$ kubectl get endpoints backend-svc backend-svc-imperative -n dso202-assignment-01
+NAME                     ENDPOINTS          AGE
+backend-svc              10.244.2.13:8080   2m3s
+backend-svc-imperative   10.244.2.13:8080   5s
+
+$ kubectl exec -n dso202-assignment-01 deploy/frontend-deployment -- curl -s http://backend-svc-imperative:8080/api/status
+{"status":"ok","db":"connected"}
+
+$ kubectl get svc backend-svc-imperative -n dso202-assignment-01 -o jsonpath='{.metadata.annotations}'
+
+
+### Bridge: generate YAML from an imperative command without creating anything
+$ kubectl create service clusterip backend-svc --tcp=8080:8080 -n dso202-assignment-01 --dry-run=client -o yaml
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: backend-svc
+  name: backend-svc
+  namespace: dso202-assignment-01
+spec:
+  ports:
+  - name: 8080-8080
+    port: 8080
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    app: backend-svc
+  type: ClusterIP
+status:
+  loadBalancer: {}
+
+### Cleanup of the imperative copy
+$ kubectl delete svc backend-svc-imperative -n dso202-assignment-01
+service "backend-svc-imperative" deleted from dso202-assignment-01 namespace
+

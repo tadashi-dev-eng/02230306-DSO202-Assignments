@@ -1,3 +1,6 @@
+# NodePort: the only tier exposed outside the cluster.
+# This kind cluster has no extraPortMappings, so the browser reaches it via
+# `kubectl port-forward svc/frontend-svc 8081:8080` (see README).
 apiVersion: v1
 kind: Service
 metadata:
@@ -5,11 +8,14 @@ metadata:
   namespace: dso202-assignment-01
   labels:
     tier: frontend
+    app: task-tracker
 spec:
   type: NodePort
   selector:
     tier: frontend
+    app: task-tracker
   ports:
-  - port: 8080
+  - name: http
+    port: 8080
     targetPort: 8080
-    # nodePort: 30080 # Add specific nodePort if configured in your kind cluster
+    nodePort: 30081   # 30080 is already taken by dso202-dev/webapp-dev

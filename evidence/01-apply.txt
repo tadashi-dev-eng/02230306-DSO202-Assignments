@@ -1,0 +1,31 @@
+$ kubectl apply -f 00-namespace.yaml
+namespace/dso202-assignment-01 created
+
+$ kubectl apply -f quota.yaml
+resourcequota/ns-quota created
+limitrange/ns-limits created
+
+$ kubectl apply -f 01-configmap.yaml -f 02-secret.yaml
+configmap/app-config created
+secret/app-secret created
+
+$ kubectl apply -f database/
+deployment.apps/db-deployment created
+persistentvolumeclaim/postgres-pvc created
+service/db-svc created
+
+$ kubectl apply -f backend/
+deployment.apps/backend-deployment created
+service/backend-svc created
+
+$ kubectl apply -f frontend/
+deployment.apps/frontend-deployment created
+The Service "frontend-svc" is invalid: spec.ports[0].nodePort: Invalid value: 30080: provided port is already allocated
+
+$ kubectl apply -f rbac.yaml
+serviceaccount/readonly-sa created
+role.rbac.authorization.k8s.io/readonly-role created
+rolebinding.rbac.authorization.k8s.io/readonly-binding created
+
+$ kubectl apply -f frontend/service.yaml
+service/frontend-svc created

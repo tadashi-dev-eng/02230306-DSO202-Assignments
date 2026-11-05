@@ -1,0 +1,20 @@
+$ kubectl port-forward -n dso202-assignment-01 svc/frontend-svc 8081:8080 &
+Forwarding from 127.0.0.1:8081 -> 8080
+
+$ curl -s -o /dev/null -w 'HTTP %{http_code}  %{content_type}\n' http://localhost:8081/
+HTTP 200  text/html
+
+$ curl -s http://localhost:8081/ | grep -o '<title>.*</title>'
+<title>Field Log — Task Tracker</title>
+
+$ curl -s http://localhost:8081/config.js
+// Rendered at container start by docker-entrypoint.sh via envsubst.
+// Static assets can't read environment variables at request time, so the
+// real value gets baked into config.js once, right before nginx starts.
+window.__CONFIG__ = {
+  BACKEND_URL: "http://backend-svc:8080"
+};
+
+$ kubectl exec -n dso202-assignment-01 deploy/frontend-deployment -- id
+uid=101(nginx) gid=101(nginx) groups=101(nginx)
+

@@ -1,0 +1,63 @@
+# Single-replica PostgreSQL. Uses the official image's POSTGRES_* variables
+# (not the backend's DB_* names) and mounts the PVC at the data directory.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: db-deployment
+  namespace: dso202-assignment-01
+  labels:
+    tier: database
+    app: task-tracker
+spec:
+  replicas: 1
+  # Recreate: the old Pod releases the ReadWriteOnce volume before the new one
+  # starts, so two postgres processes never write to the same data directory.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      tier: database
+      app: task-tracker
+  template:
+    metadata:
+      labels:
+        tier: database
+        app: task-tracker
+    spec:
+      containers:
+      - name: postgres
+        image: sarojsanyasi/dso202-db:1.0
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 5432
+          name: postgres
+        env:
+        - name: POSTGRES_DB
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: POSTGRES_DB
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: app-secret
+              key: POSTGRES_USER
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: app-secret
+              key: POSTGRES_PASSWORD
+        resources:
+          requests:
+            cpu: 250m
+            memory: 256Mi
+          limits:
+            cpu: "1"
+            memory: 512Mi
+        volumeMounts:
+        - name: db-data
+          mountPath: /var/lib/postgresql/data
+      volumes:
+      - name: db-data
+        persistentVolumeClaim:
+          claimName: postgres-pvc

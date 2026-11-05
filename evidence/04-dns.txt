@@ -1,0 +1,59 @@
+$ kubectl exec -n dso202-assignment-01 deploy/frontend-deployment -- cat /etc/resolv.conf
+search dso202-assignment-01.svc.cluster.local svc.cluster.local cluster.local
+nameserver 10.96.0.10
+options ndots:5
+
+
+$ kubectl exec -n dso202-assignment-01 deploy/frontend-deployment -- nslookup backend-svc
+Server:		10.96.0.10
+Address:	10.96.0.10:53
+
+Name:	backend-svc.dso202-assignment-01.svc.cluster.local
+Address: 10.96.15.30
+
+
+** server can't find backend-svc.svc.cluster.local: NXDOMAIN
+
+** server can't find backend-svc.svc.cluster.local: NXDOMAIN
+
+** server can't find backend-svc.cluster.local: NXDOMAIN
+
+** server can't find backend-svc.cluster.local: NXDOMAIN
+
+command terminated with exit code 1
+
+
+$ kubectl exec -n dso202-assignment-01 deploy/frontend-deployment -- nslookup db-svc
+Server:		10.96.0.10
+Address:	10.96.0.10:53
+
+** server can't find db-svc.cluster.local: NXDOMAIN
+
+** server can't find db-svc.cluster.local: NXDOMAIN
+
+
+Name:	db-svc.dso202-assignment-01.svc.cluster.local
+Address: 10.244.1.13
+
+** server can't find db-svc.svc.cluster.local: NXDOMAIN
+
+** server can't find db-svc.svc.cluster.local: NXDOMAIN
+
+command terminated with exit code 1
+
+
+$ kubectl exec -n dso202-assignment-01 deploy/frontend-deployment -- curl -s http://backend-svc:8080/api/status
+{"status":"ok","db":"connected"}
+
+$ kubectl exec -n dso202-assignment-01 deploy/frontend-deployment -- curl -s http://backend-svc.dso202-assignment-01.svc.cluster.local:8080/api/tasks/4
+{"id":4,"title":"Persistence check","description":"Created before backend pod deletion","status":"pending","created_at":"2026-11-05T15:34:39.304Z"}
+
+$ kubectl exec -n dso202-assignment-01 deploy/frontend-deployment -- cat /usr/share/nginx/html/config.js
+// Rendered at container start by docker-entrypoint.sh via envsubst.
+// Static assets can't read environment variables at request time, so the
+// real value gets baked into config.js once, right before nginx starts.
+window.__CONFIG__ = {
+  BACKEND_URL: "http://backend-svc:8080"
+};
+
+

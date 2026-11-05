@@ -1,0 +1,86 @@
+$ kubectl get all,pvc,configmap,secret -n dso202-assignment-01 -o wide
+NAME                                       READY   STATUS    RESTARTS   AGE   IP            NODE            NOMINATED NODE   READINESS GATES
+pod/backend-deployment-697d4658c7-bsh72    1/1     Running   0          19s   10.244.2.11   worker-node-1   <none>           <none>
+pod/db-deployment-86c869fc49-ktsrm         1/1     Running   0          20s   10.244.1.13   worker-node-2   <none>           <none>
+pod/frontend-deployment-5499d57d9b-9tph7   1/1     Running   0          19s   10.244.2.12   worker-node-1   <none>           <none>
+
+NAME                   TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)          AGE   SELECTOR
+service/backend-svc    ClusterIP   10.96.15.30    <none>        8080/TCP         19s   app=task-tracker,tier=backend
+service/db-svc         ClusterIP   None           <none>        5432/TCP         20s   app=task-tracker,tier=database
+service/frontend-svc   NodePort    10.96.91.144   <none>        8080:30081/TCP   10s   app=task-tracker,tier=frontend
+
+NAME                                  READY   UP-TO-DATE   AVAILABLE   AGE   CONTAINERS   IMAGES                             SELECTOR
+deployment.apps/backend-deployment    1/1     1            1           19s   backend      sarojsanyasi/dso202-backend:1.0    app=task-tracker,tier=backend
+deployment.apps/db-deployment         1/1     1            1           20s   postgres     sarojsanyasi/dso202-db:1.0         app=task-tracker,tier=database
+deployment.apps/frontend-deployment   1/1     1            1           19s   frontend     sarojsanyasi/dso202-frontend:1.0   app=task-tracker,tier=frontend
+
+NAME                                             DESIRED   CURRENT   READY   AGE   CONTAINERS   IMAGES                             SELECTOR
+replicaset.apps/backend-deployment-697d4658c7    1         1         1       19s   backend      sarojsanyasi/dso202-backend:1.0    app=task-tracker,pod-template-hash=697d4658c7,tier=backend
+replicaset.apps/db-deployment-86c869fc49         1         1         1       20s   postgres     sarojsanyasi/dso202-db:1.0         app=task-tracker,pod-template-hash=86c869fc49,tier=database
+replicaset.apps/frontend-deployment-5499d57d9b   1         1         1       19s   frontend     sarojsanyasi/dso202-frontend:1.0   app=task-tracker,pod-template-hash=5499d57d9b,tier=frontend
+
+NAME                                 STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE   VOLUMEMODE
+persistentvolumeclaim/postgres-pvc   Bound    pvc-13bf3bbd-1149-48dd-8b7a-4eea3fad7e9b   1Gi        RWO            standard       <unset>                 20s   Filesystem
+
+NAME                         DATA   AGE
+configmap/app-config         7      20s
+configmap/kube-root-ca.crt   1      20s
+
+NAME                TYPE     DATA   AGE
+secret/app-secret   Opaque   4      20s
+
+$ kubectl get pods -n dso202-assignment-01 -L tier
+NAME                                   READY   STATUS    RESTARTS   AGE   TIER
+backend-deployment-697d4658c7-bsh72    1/1     Running   0          19s   backend
+db-deployment-86c869fc49-ktsrm         1/1     Running   0          20s   database
+frontend-deployment-5499d57d9b-9tph7   1/1     Running   0          19s   frontend
+
+$ kubectl get endpoints -n dso202-assignment-01
+Warning: v1 Endpoints is deprecated in v1.33+; use discovery.k8s.io/v1 EndpointSlice
+NAME           ENDPOINTS          AGE
+backend-svc    10.244.2.11:8080   19s
+db-svc         10.244.1.13:5432   20s
+frontend-svc   10.244.2.12:8080   10s
+
+$ kubectl describe resourcequota ns-quota -n dso202-assignment-01
+Name:                   ns-quota
+Namespace:              dso202-assignment-01
+Resource                Used   Hard
+--------                ----   ----
+limits.cpu              1700m  3
+limits.memory           896Mi  2Gi
+persistentvolumeclaims  1      2
+pods                    3      8
+requests.cpu            400m   1
+requests.memory         448Mi  1Gi
+requests.storage        1Gi    2Gi
+services                3      5
+services.loadbalancers  0      0
+services.nodeports      1      1
+
+$ kubectl describe limitrange ns-limits -n dso202-assignment-01
+Name:                  ns-limits
+Namespace:             dso202-assignment-01
+Type                   Resource  Min    Max  Default Request  Default Limit  Max Limit/Request Ratio
+----                   --------  ---    ---  ---------------  -------------  -----------------------
+Container              cpu       25m    1    100m             250m           -
+Container              memory    32Mi   1Gi  128Mi            256Mi          -
+PersistentVolumeClaim  storage   500Mi  2Gi  -                -              -
+
+$ kubectl logs deploy/backend-deployment -n dso202-assignment-01 --tail=15
+[db] not reachable yet (ECONNREFUSED), retrying in 2000ms
+[db] not reachable yet (ECONNREFUSED), retrying in 2000ms
+[db] not reachable yet (ECONNREFUSED), retrying in 2000ms
+[db] not reachable yet (ECONNREFUSED), retrying in 2000ms
+[db] not reachable yet (ECONNREFUSED), retrying in 2000ms
+
+$ kubectl logs deploy/db-deployment -n dso202-assignment-01 --tail=8
+2026-11-05 15:34:24.581 UTC [120] LOG:  checkpoint starting: shutdown immediate
+2026-11-05 15:34:24.817 UTC [120] LOG:  checkpoint complete: wrote 936 buffers (5.7%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.115 s, sync=0.058 s, total=0.248 s; sync files=306, longest=0.029 s, average=0.001 s; distance=4293 kB, estimate=4293 kB; lsn=0/1925318, redo lsn=0/1925318
+2026-11-05 15:34:24.874 UTC [116] LOG:  database system is shut down
+ done
+server stopped
+
+PostgreSQL init process complete; ready for start up.
+
+

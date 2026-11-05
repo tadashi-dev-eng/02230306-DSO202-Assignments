@@ -1,0 +1,41 @@
+$ kubectl port-forward -n dso202-assignment-01 svc/backend-svc 18080:8080 &
+Forwarding from 127.0.0.1:18080 -> 8080
+
+$ curl -s http://localhost:18080/api/status
+{"status":"ok","db":"connected"}
+
+# READ (list) - seed rows from the db image's init script
+$ curl -s http://localhost:18080/api/tasks
+[{"id":1,"title":"Set up kind cluster","description":"Bring up the local cluster from Practical 1","status":"done","created_at":"2026-11-05T15:34:24.224Z"},{"id":2,"title":"Write namespace manifest","description":"One namespace for all assignment resources","status":"in_progress","created_at":"2026-11-05T15:34:24.224Z"},{"id":3,"title":"Wire ConfigMap and Secret","description":"DB_* and POSTGRES_* must carry matching values","status":"pending","created_at":"2026-11-05T15:34:24.224Z"}]
+
+# CREATE
+$ curl -s -X POST http://localhost:18080/api/tasks -H 'Content-Type: application/json' -d '{"title":"Persistence check","description":"Created before backend pod deletion"}'
+{"id":4,"title":"Persistence check","description":"Created before backend pod deletion","status":"pending","created_at":"2026-11-05T15:34:39.304Z"}
+
+# CREATE (second task, will be updated then deleted)
+$ curl -s -X POST http://localhost:18080/api/tasks -H 'Content-Type: application/json' -d '{"title":"Write assignment README","description":"DSO202 Assignment 1"}'
+{"id":5,"title":"Write assignment README","description":"DSO202 Assignment 1","status":"pending","created_at":"2026-11-05T15:34:39.411Z"}
+
+# READ (one)
+$ curl -s http://localhost:18080/api/tasks/5
+{"id":5,"title":"Write assignment README","description":"DSO202 Assignment 1","status":"pending","created_at":"2026-11-05T15:34:39.411Z"}
+
+# UPDATE
+$ curl -s -X PUT http://localhost:18080/api/tasks/5 -H 'Content-Type: application/json' -d '{"title":"Write assignment README","description":"DSO202 Assignment 1","status":"done"}'
+{"id":5,"title":"Write assignment README","description":"DSO202 Assignment 1","status":"done","created_at":"2026-11-05T15:34:39.411Z"}
+
+# DELETE
+$ curl -s -o /dev/null -w 'HTTP %{http_code}\n' -X DELETE http://localhost:18080/api/tasks/5
+HTTP 204
+
+
+# VERIFY DELETE
+$ curl -s -w '\nHTTP %{http_code}\n' http://localhost:18080/api/tasks/5
+{"error":"task not found"}
+HTTP 404
+
+
+# LIST after cycle
+$ curl -s http://localhost:18080/api/tasks
+[{"id":1,"title":"Set up kind cluster","description":"Bring up the local cluster from Practical 1","status":"done","created_at":"2026-11-05T15:34:24.224Z"},{"id":2,"title":"Write namespace manifest","description":"One namespace for all assignment resources","status":"in_progress","created_at":"2026-11-05T15:34:24.224Z"},{"id":3,"title":"Wire ConfigMap and Secret","description":"DB_* and POSTGRES_* must carry matching values","status":"pending","created_at":"2026-11-05T15:34:24.224Z"},{"id":4,"title":"Persistence check","description":"Created before backend pod deletion","status":"pending","created_at":"2026-11-05T15:34:39.304Z"}]
+

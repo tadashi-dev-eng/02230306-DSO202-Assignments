@@ -1,3 +1,4 @@
+# Namespace governance. Justification for every value is in README, Task 6.
 apiVersion: v1
 kind: ResourceQuota
 metadata:
@@ -7,8 +8,14 @@ spec:
   hard:
     requests.cpu: "1"
     requests.memory: 1Gi
-    limits.cpu: "2"
+    limits.cpu: "3"
     limits.memory: 2Gi
+    pods: "8"
+    services: "5"
+    services.nodeports: "1"        # only the frontend may be exposed
+    services.loadbalancers: "0"    # enforces "no LoadBalancer" constraint
+    persistentvolumeclaims: "2"
+    requests.storage: 2Gi
 ---
 apiVersion: v1
 kind: LimitRange
@@ -17,10 +24,21 @@ metadata:
   namespace: dso202-assignment-01
 spec:
   limits:
-  - default:
-      cpu: 500m
-      memory: 512Mi
-    defaultRequest:
+  - type: Container
+    defaultRequest:          # applied when a container omits requests
+      cpu: 100m
+      memory: 128Mi
+    default:                 # applied when a container omits limits
       cpu: 250m
       memory: 256Mi
-    type: Container
+    min:
+      cpu: 25m
+      memory: 32Mi
+    max:
+      cpu: "1"
+      memory: 1Gi
+  - type: PersistentVolumeClaim
+    min:
+      storage: 500Mi
+    max:
+      storage: 2Gi

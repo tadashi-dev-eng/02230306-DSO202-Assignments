@@ -1,0 +1,17 @@
+# Storage for PostgreSQL data, provisioned by kind's default StorageClass
+# ("standard", rancher.io/local-path). Its lifecycle is independent of the Pod.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-pvc
+  namespace: dso202-assignment-01
+  labels:
+    tier: database
+    app: task-tracker
+spec:
+  storageClassName: standard
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi

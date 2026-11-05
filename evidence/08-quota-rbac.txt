@@ -1,0 +1,61 @@
+### Task 6 - quota enforcement
+$ kubectl create service loadbalancer lb-test --tcp=80:80 -n dso202-assignment-01
+error: failed to create LoadBalancer service: services "lb-test" is forbidden: exceeded quota: ns-quota, requested: services.loadbalancers=1,services.nodeports=1, used: services.loadbalancers=0,services.nodeports=1, limited: services.loadbalancers=0,services.nodeports=1
+
+$ kubectl create service nodeport np-test --tcp=80:80 -n dso202-assignment-01
+error: failed to create NodePort service: services "np-test" is forbidden: exceeded quota: ns-quota, requested: services.nodeports=1, used: services.nodeports=1, limited: services.nodeports=1
+
+$ kubectl run greedy --image=sarojsanyasi/dso202-frontend:1.0 --image-pull-policy=IfNotPresent -n dso202-assignment-01 --overrides='{"spec":{"containers":[{"name":"greedy","image":"sarojsanyasi/dso202-frontend:1.0","resources":{"requests":{"cpu":"2"},"limits":{"cpu":"2"}}}]}}'
+Error from server (Forbidden): pods "greedy" is forbidden: maximum cpu usage per Container is 1, but limit is 2
+
+$ kubectl run defaults-demo --image=sarojsanyasi/dso202-frontend:1.0 --image-pull-policy=IfNotPresent -n dso202-assignment-01 --restart=Never
+pod/defaults-demo created
+
+$ kubectl get pod defaults-demo -n dso202-assignment-01 -o jsonpath='{.spec.containers[0].resources}'
+{"limits":{"cpu":"250m","memory":"256Mi"},"requests":{"cpu":"100m","memory":"128Mi"}}
+
+$ kubectl delete pod defaults-demo -n dso202-assignment-01 --now
+pod "defaults-demo" deleted from dso202-assignment-01 namespace
+
+### Task 8 (bonus) - RBAC
+$ kubectl get sa,role,rolebinding -n dso202-assignment-01
+NAME                         AGE
+serviceaccount/default       2m16s
+serviceaccount/readonly-sa   2m15s
+
+NAME                                           CREATED AT
+role.rbac.authorization.k8s.io/readonly-role   2026-11-05T15:34:05Z
+
+NAME                                                     ROLE                 AGE
+rolebinding.rbac.authorization.k8s.io/readonly-binding   Role/readonly-role   2m15s
+
+$ kubectl auth can-i get pods -n dso202-assignment-01 --as=system:serviceaccount:dso202-assignment-01:readonly-sa
+yes
+
+$ kubectl auth can-i list deployments -n dso202-assignment-01 --as=system:serviceaccount:dso202-assignment-01:readonly-sa
+yes
+
+$ kubectl auth can-i watch services -n dso202-assignment-01 --as=system:serviceaccount:dso202-assignment-01:readonly-sa
+yes
+
+$ kubectl auth can-i get secrets -n dso202-assignment-01 --as=system:serviceaccount:dso202-assignment-01:readonly-sa
+no
+
+$ kubectl auth can-i delete pods -n dso202-assignment-01 --as=system:serviceaccount:dso202-assignment-01:readonly-sa
+no
+
+$ kubectl auth can-i create deployments -n dso202-assignment-01 --as=system:serviceaccount:dso202-assignment-01:readonly-sa
+no
+
+$ kubectl auth can-i get pods -n default --as=system:serviceaccount:dso202-assignment-01:readonly-sa
+no
+
+$ kubectl get pods -n dso202-assignment-01 --as=system:serviceaccount:dso202-assignment-01:readonly-sa
+NAME                                   READY   STATUS    RESTARTS      AGE
+backend-deployment-697d4658c7-pwmxz    1/1     Running   1 (48s ago)   72s
+db-deployment-86c869fc49-vpkm7         1/1     Running   0             48s
+frontend-deployment-5499d57d9b-9tph7   1/1     Running   0             2m16s
+
+$ kubectl delete pod -l tier=frontend -n dso202-assignment-01 --as=system:serviceaccount:dso202-assignment-01:readonly-sa
+Error from server (Forbidden): pods "frontend-deployment-5499d57d9b-9tph7" is forbidden: User "system:serviceaccount:dso202-assignment-01:readonly-sa" cannot delete resource "pods" in API group "" in the namespace "dso202-assignment-01"
+

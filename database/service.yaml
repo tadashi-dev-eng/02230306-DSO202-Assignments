@@ -1,0 +1,19 @@
+# Headless Service (clusterIP: None): DNS name db-svc resolves directly to the
+# database Pod IP. No NodePort/LoadBalancer - reachable inside the cluster only.
+apiVersion: v1
+kind: Service
+metadata:
+  name: db-svc
+  namespace: dso202-assignment-01
+  labels:
+    tier: database
+    app: task-tracker
+spec:
+  clusterIP: None
+  selector:
+    tier: database
+    app: task-tracker
+  ports:
+  - name: postgres
+    port: 5432
+    targetPort: 5432

@@ -1,3 +1,4 @@
+# nginx static frontend. BACKEND_URL is rendered into config.js at container start.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -5,24 +6,36 @@ metadata:
   namespace: dso202-assignment-01
   labels:
     tier: frontend
+    app: task-tracker
 spec:
   replicas: 1
   selector:
     matchLabels:
       tier: frontend
+      app: task-tracker
   template:
     metadata:
       labels:
         tier: frontend
+        app: task-tracker
     spec:
       containers:
       - name: frontend
         image: sarojsanyasi/dso202-frontend:1.0
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8080
+          name: http
         env:
         - name: BACKEND_URL
           valueFrom:
             configMapKeyRef:
               name: app-config
               key: BACKEND_URL
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            cpu: 200m
+            memory: 128Mi

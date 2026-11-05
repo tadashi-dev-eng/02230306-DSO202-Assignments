@@ -1,0 +1,17 @@
+# Non-sensitive runtime configuration shared by all three tiers.
+# DB_NAME (backend) and POSTGRES_DB (database image) must hold the same value.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  namespace: dso202-assignment-01
+  labels:
+    app: task-tracker
+data:
+  DB_HOST: "db-svc"                         # headless Service name of the database tier
+  DB_PORT: "5432"
+  DB_NAME: "taskdb"
+  APP_PORT: "8080"
+  CORS_ORIGIN: "*"                          # classroom simplification; restrict in production
+  POSTGRES_DB: "taskdb"
+  BACKEND_URL: "http://backend-svc:8080"    # ClusterIP Service name of the backend tier

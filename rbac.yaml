@@ -1,0 +1,36 @@
+# Task 8 (bonus): read-only ServiceAccount scoped to this namespace only.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: readonly-sa
+  namespace: dso202-assignment-01
+  labels:
+    app: task-tracker
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: readonly-role
+  namespace: dso202-assignment-01
+rules:
+- apiGroups: [""]
+  resources: ["pods", "pods/log", "services", "endpoints", "configmaps", "persistentvolumeclaims"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["apps"]
+  resources: ["deployments", "replicasets"]
+  verbs: ["get", "list", "watch"]
+# Secrets are deliberately NOT listed: a read-only viewer should not see credentials.
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: readonly-binding
+  namespace: dso202-assignment-01
+subjects:
+- kind: ServiceAccount
+  name: readonly-sa
+  namespace: dso202-assignment-01
+roleRef:
+  kind: Role
+  name: readonly-role
+  apiGroup: rbac.authorization.k8s.io
