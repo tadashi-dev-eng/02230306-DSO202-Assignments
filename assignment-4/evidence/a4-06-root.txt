@@ -1,0 +1,42 @@
+$ kubectl apply -f bootstrap/root
+appproject.argoproj.io/platform created
+Warning: metadata.finalizers: "resources-finalizer.argocd.argoproj.io": prefer a domain-qualified finalizer name including a path (/) to avoid accidental conflicts with other finalizer writers
+application.argoproj.io/root created
+$ kubectl get appproject,application -n argocd
+NAME                              AGE
+appproject.argoproj.io/default    8m28s
+appproject.argoproj.io/dso202     23s
+appproject.argoproj.io/platform   30s
+
+NAME                           SYNC STATUS   HEALTH STATUS
+application.argoproj.io/root   Synced        Healthy
+$ argocd app get root
+Name:               argocd/root
+Project:            platform
+Server:             https://kubernetes.default.svc
+Namespace:          argocd
+URL:                https://localhost:8443/applications/root
+Source:
+- Repo:             https://github.com/tadashi-dev-eng/dso202-gitops.git
+  Target:           main
+  Path:             argocd
+SyncWindow:         Sync Allowed
+Sync Policy:        Automated (Prune)
+Sync Status:        Synced to main (dd39fa2)
+Health Status:      Healthy
+
+GROUP        KIND        NAMESPACE  NAME    STATUS  HEALTH  HOOK  MESSAGE
+argoproj.io  AppProject  argocd     dso202  Synced                appproject.argoproj.io/dso202 unchanged
+$ argocd proj get dso202
+Name:                        dso202
+Description:                 Task Tracker workloads for the dev and staging environments
+Destinations:                https://kubernetes.default.svc,dso202-dev
+                             https://kubernetes.default.svc,dso202-staging
+Repositories:                https://github.com/tadashi-dev-eng/dso202-gitops.git
+Source Namespaces:           <none>
+Scoped Repositories:         <none>
+Allowed Cluster Resources:   <none>
+Scoped Clusters:             <none>
+Denied Namespaced Resources: <none>
+Signature keys:              <none>
+Orphaned Resources:          disabled

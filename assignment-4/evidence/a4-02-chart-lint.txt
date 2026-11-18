@@ -1,0 +1,22 @@
+$ helm lint charts/tasktracker -f environments/dev/values.yaml
+==> Linting charts/tasktracker
+[INFO] Chart.yaml: icon is recommended
+
+1 chart(s) linted, 0 chart(s) failed
+$ helm lint charts/tasktracker -f environments/staging/values.yaml
+==> Linting charts/tasktracker
+[INFO] Chart.yaml: icon is recommended
+
+1 chart(s) linted, 0 chart(s) failed
+$ helm template tasktracker charts/tasktracker -f environments/dev/values.yaml | grep '^kind:' | sort | uniq -c
+      2 kind: ConfigMap
+      2 kind: Deployment
+      3 kind: Service
+      3 kind: ServiceAccount
+      1 kind: StatefulSet
+$ helm template tasktracker charts/tasktracker -f environments/staging/values.yaml | grep '^kind:' | sort | uniq -c
+      2 kind: ConfigMap
+      2 kind: Deployment
+      3 kind: Service
+      3 kind: ServiceAccount
+      1 kind: StatefulSet

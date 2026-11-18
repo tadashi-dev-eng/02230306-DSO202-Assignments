@@ -1,0 +1,30 @@
+$ kubectl scale deployment/tasktracker-backend -n dso202-staging --replicas=3
+deployment.apps/tasktracker-backend scaled
+$ sleep 45; kubectl get deployment/tasktracker-backend -n dso202-staging   # 45 s later
+NAME                  READY   UP-TO-DATE   AVAILABLE   AGE
+tasktracker-backend   3/3     3            3           32m
+$ argocd app get tasktracker-staging --refresh | sed -n "/^Sync Status/,/^Health/p;/OutOfSync/p"
+Sync Status:        OutOfSync from v1.2.0 (bfb7dec)
+Health Status:      Healthy
+apps   Deployment      dso202-staging  tasktracker-backend         OutOfSync  Healthy            deployment.apps/tasktracker-backend configured
+$ argocd app diff tasktracker-staging
+
+===== apps/Deployment dso202-staging/tasktracker-backend ======
+175c175
+<   replicas: 3
+---
+>   replicas: 1
+$ argocd app sync tasktracker-staging --timeout 300 | sed -n "/^Sync Status/,/^Message/p"
+Sync Status:        Synced to v1.2.0 (bfb7dec)
+Health Status:      Healthy
+
+Operation:          Sync
+Sync Revision:      bfb7deca26be212d1b755cbfe90e7f006e000658
+Phase:              Succeeded
+Start:              2026-11-15 11:44:26 +0600 +06
+Finished:           2026-11-15 11:44:42 +0600 +06
+Duration:           16s
+Message:            successfully synced (no more tasks)
+$ kubectl get deployment/tasktracker-backend -n dso202-staging
+NAME                  READY   UP-TO-DATE   AVAILABLE   AGE
+tasktracker-backend   1/1     1            1           33m

@@ -1,0 +1,13 @@
+$ git add platform/dev/prune-drill.yaml && git commit -qm "Task 8 drill 3: add prune-drill ConfigMap to platform/dev" && git push -q origin main && git log --oneline -1
+02d6f5f Task 8 drill 3: add prune-drill ConfigMap to platform/dev
+$ argocd app get platform-dev --refresh >/dev/null; sleep 20; kubectl get configmap prune-drill -n dso202-dev
+NAME          DATA   AGE
+prune-drill   1      19s
+$ git rm -q platform/dev/prune-drill.yaml && git commit -qm "Task 8 drill 3: remove prune-drill ConfigMap from Git (expect prune)" && git push -q origin main && git log --oneline -1
+dc6cab0 Task 8 drill 3: remove prune-drill ConfigMap from Git (expect prune)
+$ argocd app get platform-dev --refresh >/dev/null; sleep 20; kubectl get configmap prune-drill -n dso202-dev
+Error from server (NotFound): configmaps "prune-drill" not found
+$ argocd app get platform-dev | sed -n "/^Sync Policy/,/^Health/p"
+Sync Policy:        Automated (Prune)
+Sync Status:        Synced to main (dc6cab0)
+Health Status:      Healthy

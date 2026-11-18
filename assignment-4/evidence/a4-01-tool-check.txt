@@ -1,0 +1,33 @@
+$ docker version --format '{{.Server.Version}}'
+29.2.1
+$ kind version
+kind v0.20.0 go1.20.4 linux/amd64
+$ kubectl version --client
+Client Version: v1.36.3
+Kustomize Version: v5.8.1
+$ helm version --short
+v4.3.1+gc0d08d0
+$ git --version
+git version 2.48.1
+$ argocd version --client
+argocd: v3.5.6+c2b1e30
+  BuildDate: 2026-10-20T19:01:52Z
+  GitCommit: c2b1e3017e2cec86b122172e861dcd026453ae44
+  GitTreeState: clean
+  GoVersion: go1.26.10
+  Compiler: gc
+  Platform: linux/amd64
+$ kubeseal --version
+kubeseal version: 0.40.0
+$ helm repo add sealed-secrets https://bitnami.github.io/sealed-secrets
+"sealed-secrets" already exists with the same configuration, skipping
+$ helm repo update sealed-secrets
+Hang tight while we grab the latest from your chart repositories...
+...Successfully got an update from the "sealed-secrets" chart repository
+Update Complete. ⎈Happy Helming!⎈
+$ helm search repo sealed-secrets/sealed-secrets --versions | head -5
+NAME                         	CHART VERSION	APP VERSION	DESCRIPTION                                  
+sealed-secrets/sealed-secrets	2.22.0       	0.41.2     	Helm chart for the sealed-secrets controller.
+sealed-secrets/sealed-secrets	2.21.0       	0.41.2     	Helm chart for the sealed-secrets controller.
+sealed-secrets/sealed-secrets	2.20.0       	0.40.0     	Helm chart for the sealed-secrets controller.
+sealed-secrets/sealed-secrets	2.19.3       	0.39.1     	Helm chart for the sealed-secrets controller.

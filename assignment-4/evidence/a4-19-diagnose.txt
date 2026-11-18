@@ -1,0 +1,52 @@
+$ kubectl get pods -n dso202-dev
+NAME                                    READY   STATUS      RESTARTS      AGE
+tasktracker-backend-5d47988c68-q2p98    0/1     Error       4 (67s ago)   2m23s
+tasktracker-backend-f79494d5f-mvjw5     1/1     Running     0             20m
+tasktracker-db-0                        1/1     Running     0             20m
+tasktracker-frontend-66cd7444d7-ccr9g   1/1     Running     0             5m49s
+tasktracker-smoke-test-kh58s            0/1     Completed   0             5m35s
+$ kubectl describe pod tasktracker-backend-5d47988c68-q2p98 -n dso202-dev | sed -n "/^Containers:/,/^Conditions:/p;/^Events:/,\$p"
+Containers:
+  backend:
+    Container ID:   containerd://ad84beae13da779bc591e75218bfa7703d3e292e676773ad8e1b8db5deb28735
+    Image:          sarojsanyasi/dso202-backend:1.1
+    Image ID:       sha256:2720dc5d8dde439a8cc5b91f14759eebf1fb6f3edffbf968a0de9f4f2b65b89a
+    Port:           8080/TCP (http)
+    Host Port:      0/TCP (http)
+    State:          Terminated
+      Reason:       Error
+      Exit Code:    1
+      Started:      Sun, 15 Nov 2026 11:29:24 +0600
+      Finished:     Sun, 15 Nov 2026 11:29:33 +0600
+    Last State:     Terminated
+      Reason:       Error
+      Exit Code:    1
+      Started:      Sun, 15 Nov 2026 11:28:20 +0600
+      Finished:     Sun, 15 Nov 2026 11:28:29 +0600
+    Ready:          False
+    Restart Count:  4
+    Limits:
+      cpu:     500m
+      memory:  256Mi
+    Requests:
+      cpu:      100m
+      memory:   128Mi
+    Readiness:  http-get http://:http/api/status delay=0s timeout=1s period=5s #success=1 #failure=3
+    Environment Variables from:
+      tasktracker-config  ConfigMap  Optional: false
+    Environment:
+      DB_USER:      <set to the key 'DB_USER' in secret 'tasktracker-credentials'>      Optional: false
+      DB_PASSWORD:  <set to the key 'DB_PASSWORD' in secret 'tasktracker-credentials'>  Optional: false
+    Mounts:         <none>
+Conditions:
+Events:
+  Type     Reason     Age                  From               Message
+  ----     ------     ----                 ----               -------
+  Normal   Scheduled  2m23s                default-scheduler  Successfully assigned dso202-dev/tasktracker-backend-5d47988c68-q2p98 to worker-node-1
+  Normal   Pulled     12s (x5 over 2m22s)  kubelet            spec.containers{backend}: Container image "sarojsanyasi/dso202-backend:1.1" already present on machine and can be accessed by the pod
+  Normal   Created    12s (x5 over 2m22s)  kubelet            spec.containers{backend}: Container created
+  Normal   Started    12s (x5 over 2m22s)  kubelet            spec.containers{backend}: Container started
+  Warning  Unhealthy  6s (x16 over 2m22s)  kubelet            spec.containers{backend}: Readiness probe failed: Get "http://10.244.2.18:8080/api/status": dial tcp 10.244.2.18:8080: connect: connection refused
+  Warning  BackOff    2s (x4 over 2m2s)    kubelet            spec.containers{backend}: Back-off restarting failed container backend in pod tasktracker-backend-5d47988c68-q2p98_dso202-dev(78bb445a-7f6f-49db-a22b-a733d3418549)
+$ kubectl logs tasktracker-backend-5d47988c68-q2p98 -n dso202-dev
+[config] FATAL: required environment variable APP_ENV is not set; expected one of: dev, staging, prod

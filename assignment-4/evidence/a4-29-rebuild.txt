@@ -1,0 +1,157 @@
+$ kubectl get secret -n sealed-secrets -l sealedsecrets.bitnami.com/sealed-secrets-key -o yaml > ../dso202-keys/sealing-key.backup.yaml && chmod 600 ../dso202-keys/sealing-key.backup.yaml && ls -l ../dso202-keys/sealing-key.backup.yaml
+-rw------- 1 tadashi tadashi 7087 Nov 15 11:48 ../dso202-keys/sealing-key.backup.yaml
+$ kubectl get secret -n sealed-secrets -l sealedsecrets.bitnami.com/sealed-secrets-key
+NAME                      TYPE                DATA   AGE
+sealed-secrets-keyblxhm   kubernetes.io/tls   2      43m
+$ git rev-parse HEAD
+9aa44cdcab625aa61c048113db6a4df4374d98e0
+$ kubectl get applications -n argocd
+NAME                  SYNC STATUS   HEALTH STATUS
+platform-dev          Synced        Healthy
+platform-staging      Synced        Healthy
+root                  Synced        Healthy
+sealed-secrets        Synced        Healthy
+tasktracker-dev       Synced        Healthy
+tasktracker-staging   Synced        Healthy
+$ argocd app get tasktracker-staging | grep Target
+  Target:           v1.2.0
+$ date
+Sun Nov 15 11:48:40 AM +06 2026
+$ kind delete cluster --name dso202-gitops
+Deleting cluster "dso202-gitops" ...
+Deleted nodes: ["dso202-gitops-worker" "dso202-gitops-control-plane" "dso202-gitops-worker2"]
+$ kind create cluster --name dso202-gitops --config cluster/kind-cluster.yaml
+Creating cluster "dso202-gitops" ...
+ ✓ Ensuring node image (kindest/node:v1.36.1) 🖼
+ ✓ Preparing nodes 📦 📦 📦 
+ ✓ Writing configuration 📜
+ ✓ Starting control-plane 🕹️
+ ✓ Installing CNI 🔌
+ ✓ Installing StorageClass 💾
+ ✓ Joining worker nodes 🚜
+Set kubectl context to "kind-dso202-gitops"
+You can now use your cluster with:
+
+kubectl cluster-info --context kind-dso202-gitops
+
+Not sure what to do next? 😅  Check out https://kind.sigs.k8s.io/docs/user/quick-start/
+$ kubectl get nodes
+NAME            STATUS     ROLES           AGE   VERSION
+control-plane   NotReady   control-plane   17s   v1.36.1
+worker-node-1   NotReady   <none>          2s    v1.36.1
+worker-node-2   NotReady   <none>          2s    v1.36.1
+$ kubectl -n kube-system get cm coredns -o jsonpath="{.data.Corefile}" | sed "s#forward . /etc/resolv.conf#forward . 8.8.8.8 1.1.1.1#" | kubectl -n kube-system create cm coredns --from-file=Corefile=/dev/stdin --dry-run=client -o yaml | kubectl apply -f - 2>&1 | grep -v Warning; kubectl -n kube-system rollout restart deploy/coredns   # local workaround: Docker Desktop DNS times out inside pods
+configmap/coredns configured
+deployment.apps/coredns restarted
+$ for img in sarojsanyasi/dso202-frontend:1.0 sarojsanyasi/dso202-frontend:1.1 sarojsanyasi/dso202-backend:1.0 sarojsanyasi/dso202-backend:1.1 sarojsanyasi/dso202-db:1.0 busybox:1.37 bitnami/sealed-secrets-controller:0.40.0; do
+  for node in dso202-gitops-control-plane dso202-gitops-worker dso202-gitops-worker2; do
+    docker save "$img" | docker exec -i "$node" ctr -n k8s.io images import --all-platforms - >/dev/null
+  done
+done   # section 13 image preload (kind v0.20 "kind load" is broken here)
+$ docker exec dso202-gitops-worker crictl images | grep -E "dso202|busybox|sealed"
+docker.io/bitnami/sealed-secrets-controller     0.40.0               bd61f7a874669       87.6MB
+docker.io/library/busybox                       1.37                 30ecbe1509090       4.66MB
+docker.io/sarojsanyasi/dso202-backend           1.0                  f0dc44e65e5a2       167MB
+docker.io/sarojsanyasi/dso202-backend           1.1                  2720dc5d8dde4       167MB
+docker.io/sarojsanyasi/dso202-db                1.0                  5c64c4cb287f5       294MB
+docker.io/sarojsanyasi/dso202-frontend          1.0                  a66ea22384e99       81MB
+docker.io/sarojsanyasi/dso202-frontend          1.1                  f0c9adad8e7bf       81MB
+$ kubectl create namespace sealed-secrets
+namespace/sealed-secrets created
+$ kubectl apply -f ../dso202-keys/sealing-key.backup.yaml
+secret/sealed-secrets-keyblxhm created
+$ kubectl get secret -n sealed-secrets -l sealedsecrets.bitnami.com/sealed-secrets-key
+NAME                      TYPE                DATA   AGE
+sealed-secrets-keyblxhm   kubernetes.io/tls   2      0s
+$ kubectl apply -k bootstrap/argocd --server-side --force-conflicts | tail -3
+networkpolicy.networking.k8s.io/argocd-redis-network-policy serverside-applied
+networkpolicy.networking.k8s.io/argocd-repo-server-network-policy serverside-applied
+networkpolicy.networking.k8s.io/argocd-server-network-policy serverside-applied
+$ kubectl wait --for=condition=Available deployment --all -n argocd --timeout=300s
+deployment.apps/argocd-applicationset-controller condition met
+timed out waiting for the condition on deployments/argocd-dex-server
+timed out waiting for the condition on deployments/argocd-notifications-controller
+timed out waiting for the condition on deployments/argocd-redis
+timed out waiting for the condition on deployments/argocd-repo-server
+timed out waiting for the condition on deployments/argocd-server
+$ kubectl rollout status statefulset/argocd-application-controller -n argocd --timeout=300s
+partitioned roll out complete: 1 new pods have been updated...
+$ kubectl wait --for=condition=Available deployment --all -n argocd --timeout=300s   # re-run: first image pulls were slow
+deployment.apps/argocd-applicationset-controller condition met
+deployment.apps/argocd-dex-server condition met
+deployment.apps/argocd-notifications-controller condition met
+deployment.apps/argocd-redis condition met
+deployment.apps/argocd-repo-server condition met
+deployment.apps/argocd-server condition met
+$ kubectl get pods -n argocd
+NAME                                                READY   STATUS    RESTARTS   AGE
+argocd-application-controller-0                     1/1     Running   0          5m42s
+argocd-applicationset-controller-58bb5c7479-6p4cw   1/1     Running   0          5m42s
+argocd-dex-server-dd6b85d9c-qpqsz                   1/1     Running   0          5m42s
+argocd-notifications-controller-6b85c65458-tflff    1/1     Running   0          5m42s
+argocd-redis-869b85489d-gnv55                       1/1     Running   0          5m42s
+argocd-repo-server-5bf66565cd-d7qq5                 1/1     Running   0          5m42s
+argocd-server-7474bb8f76-dsqmd                      1/1     Running   0          5m42s
+$ kubectl apply -f bootstrap/root 2>&1 | grep -v Warning
+appproject.argoproj.io/platform created
+application.argoproj.io/root created
+$ kubectl get applications -n argocd -w     # started before "kubectl apply -f bootstrap/root"; condensed to the moment each became Synced/Healthy
+kind create cluster started: 11:48:47
+11:59:40  sealed-secrets     Synced  Healthy   (wave -2)
+11:59:45  platform-dev       Synced  Healthy   (wave -1, restored key decrypted the SealedSecret)
+11:59:45  platform-staging   Synced  Healthy   (wave -1)
+12:01:14  tasktracker-dev    Synced  Healthy   (wave 0, smoke test passed)
+          tasktracker-staging OutOfSync Missing   (manual by design; root itself reported Healthy - see report, Q3)
+$ argocd admin initial-password -n argocd | sed "1s/.*/<redacted-new-initial-password>/"
+<redacted-new-initial-password>
+
+ This password must be only used for first time login. We strongly recommend you update the password using `argocd account update-password`.
+$ argocd login localhost:8443 --username admin --password "$(cat ../dso202-keys/argocd-admin-initial.txt)" --insecure
+'admin:login' logged in successfully
+Context 'localhost:8443' updated
+$ kubectl get applications -n argocd
+NAME                  SYNC STATUS   HEALTH STATUS
+platform-dev          Synced        Healthy
+platform-staging      Synced        Healthy
+root                  Synced        Healthy
+sealed-secrets        Synced        Healthy
+tasktracker-dev       Synced        Healthy
+tasktracker-staging   OutOfSync     Missing
+$ argocd app sync tasktracker-staging --timeout 400 | sed -n "/^Sync Status/,/^Message/p"
+Sync Status:        Synced to v1.2.0 (bfb7dec)
+Health Status:      Healthy
+
+Operation:          Sync
+Sync Revision:      bfb7deca26be212d1b755cbfe90e7f006e000658
+Phase:              Succeeded
+Start:              2026-11-15 12:01:38 +0600 +06
+Finished:           2026-11-15 12:03:16 +0600 +06
+Duration:           1m38s
+Message:            successfully synced (no more tasks)
+$ kubectl get applications -n argocd
+NAME                  SYNC STATUS   HEALTH STATUS
+platform-dev          Synced        Healthy
+platform-staging      Synced        Healthy
+root                  Synced        Healthy
+sealed-secrets        Synced        Healthy
+tasktracker-dev       Synced        Healthy
+tasktracker-staging   Synced        Healthy
+$ kubectl logs job/tasktracker-smoke-test -n dso202-dev | tail -1; kubectl logs job/tasktracker-smoke-test -n dso202-staging | tail -1
+smoke test passed on attempt 1
+smoke test passed on attempt 1
+$ argocd app get tasktracker-staging | grep -E "Target|Sync Status"
+  Target:           v1.2.0
+Sync Status:        Synced to v1.2.0 (bfb7dec)
+$ curl -s -X POST -H "Content-Type: application/json" -d "{\"title\":\"Rebuilt from Git (dev)\",\"description\":\"Task 9\",\"status\":\"pending\"}" http://localhost:30080/api/tasks; echo
+{"id":4,"title":"Rebuilt from Git (dev)","description":"Task 9","status":"pending","created_at":"2026-11-15T06:03:42.910Z"}
+$ curl -s -X POST -H "Content-Type: application/json" -d "{\"title\":\"Rebuilt from Git (staging)\",\"description\":\"Task 9\",\"status\":\"pending\"}" http://localhost:8081/api/tasks; echo
+{"id":4,"title":"Rebuilt from Git (staging)","description":"Task 9","status":"pending","created_at":"2026-11-15T06:03:45.136Z"}
+$ curl -s -o /dev/null -w "dev %{http_code}  " http://localhost:30080/; curl -s -o /dev/null -w "staging %{http_code}\n" http://localhost:8081/
+dev 200  staging 200
+$ kubectl get secret -n sealed-secrets -l sealedsecrets.bitnami.com/sealed-secrets-key
+NAME                      TYPE                DATA   AGE
+sealed-secrets-keyblxhm   kubernetes.io/tls   2      10m
+$ kubectl get secret -n sealed-secrets -l sealedsecrets.bitnami.com/sealed-secrets-key -o yaml > ../dso202-keys/sealing-key.backup.yaml && chmod 600 ../dso202-keys/sealing-key.backup.yaml && ls -l ../dso202-keys/sealing-key.backup.yaml
+-rw------- 1 tadashi tadashi 14200 Nov 15 12:03 ../dso202-keys/sealing-key.backup.yaml
+$ date
+Sun Nov 15 12:03:46 PM +06 2026

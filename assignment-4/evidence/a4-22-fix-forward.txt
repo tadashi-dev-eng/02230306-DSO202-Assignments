@@ -1,0 +1,57 @@
+$ git diff environments/dev/values.yaml
+diff --git a/environments/dev/values.yaml b/environments/dev/values.yaml
+index 7e8589b..657f0d9 100644
+--- a/environments/dev/values.yaml
++++ b/environments/dev/values.yaml
+@@ -17,8 +17,14 @@ frontend:
+ 
+ backend:
+   image:
+-    tag: "1.0"
++    tag: "1.1"            # Task 7 fix-forward: release 1.1 again, with APP_ENV supplied
+   replicaCount: 1
++  # Backend 1.1 refuses to start without APP_ENV (container log:
++  # "[config] FATAL: required environment variable APP_ENV is not set;
++  # expected one of: dev, staging, prod"). Supplied as a value (C2), so no
++  # template changes.
++  env:
++    APP_ENV: dev
+ 
+ database:
+   image:
+$ git commit -qam "Fix forward: backend 1.1 with APP_ENV set per environment (values only, C2)" && git push -q -u origin fix/backend-1.1-app-env 2>&1 | grep -v "^remote:"
+$ gh pr create --title "Fix forward: backend 1.1 with APP_ENV" --body "Task 7 Part B step 9: release backend 1.1 again and supply APP_ENV (dev / staging) through backend.env in each values file. No template change (chart contract C2)." --base main --head fix/backend-1.1-app-env
+https://github.com/tadashi-dev-eng/dso202-gitops/pull/5
+$ gh pr merge --squash --delete-branch
+From https://github.com/tadashi-dev-eng/dso202-gitops
+ * branch            main       -> FETCH_HEAD
+   b89cca0..bfb7dec  main       -> origin/main
+Updating b89cca0..bfb7dec
+Fast-forward
+ environments/dev/values.yaml     | 8 +++++++-
+ environments/staging/values.yaml | 8 +++++++-
+ 2 files changed, 14 insertions(+), 2 deletions(-)
+$ git checkout -q main && git pull -q && git log --oneline -1
+bfb7dec Fix forward: backend 1.1 with APP_ENV set per environment (values only, C2) (#5)
+$ kubectl get pods -n dso202-dev
+NAME                                    READY   STATUS      RESTARTS   AGE
+tasktracker-backend-7684556557-qdwm9    1/1     Running     0          72s
+tasktracker-db-0                        1/1     Running     0          31m
+tasktracker-frontend-66cd7444d7-ccr9g   1/1     Running     0          16m
+tasktracker-smoke-test-tjbvk            0/1     Completed   0          23s
+$ argocd app get tasktracker-dev | sed -n "/^Sync Status/,/^Health/p"
+Sync Status:        Synced to main (bfb7dec)
+Health Status:      Healthy
+$ kubectl logs deploy/tasktracker-backend -n dso202-dev
+[config] backend 1.1 configuration loaded (APP_ENV=dev)
+[db] connected
+[server] listening on :8080
+$ kubectl logs job/tasktracker-smoke-test -n dso202-dev | tail -1
+smoke test passed on attempt 1
+$ argocd app history tasktracker-dev
+SOURCE  https://github.com/tadashi-dev-eng/dso202-gitops.git
+ID      DATE                           REVISION
+0       2026-11-15 11:10:19 +0600 +06  main (2167a8a)
+1       2026-11-15 11:24:10 +0600 +06  main (ab2131e)
+2       2026-11-15 11:38:10 +0600 +06  main (b89cca0)
+3       2026-11-15 11:40:17 +0600 +06  main (bfb7dec)

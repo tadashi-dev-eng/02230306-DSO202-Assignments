@@ -1,0 +1,65 @@
+$ kubectl get pods -n dso202-dev -w
+NAME                                    READY   STATUS      RESTARTS   AGE
+tasktracker-backend-f79494d5f-mvjw5     1/1     Running     0          17m
+tasktracker-db-0                        1/1     Running     0          18m
+tasktracker-frontend-66cd7444d7-ccr9g   1/1     Running     0          3m17s
+tasktracker-smoke-test-kh58s            0/1     Completed   0          3m3s
+tasktracker-backend-5d47988c68-q2p98    0/1     Running             0          1s
+tasktracker-backend-5d47988c68-q2p98    0/1     Error               0          12s
+tasktracker-backend-5d47988c68-q2p98    0/1     Running             1 (2s ago)   13s
+tasktracker-backend-5d47988c68-q2p98    0/1     Error               1 (10s ago)   21s
+tasktracker-backend-5d47988c68-q2p98    0/1     CrashLoopBackOff    1 (12s ago)   33s
+tasktracker-backend-5d47988c68-q2p98    0/1     Running             2 (13s ago)   34s
+tasktracker-backend-5d47988c68-q2p98    0/1     Error               2 (24s ago)   45s
+tasktracker-backend-5d47988c68-q2p98    0/1     CrashLoopBackOff    2 (23s ago)   67s
+tasktracker-backend-5d47988c68-q2p98    0/1     Running             3 (23s ago)   67s
+tasktracker-backend-5d47988c68-q2p98    0/1     Error               3 (33s ago)   77s
+tasktracker-backend-5d47988c68-q2p98    0/1     CrashLoopBackOff    3 (55s ago)   2m11s
+tasktracker-backend-5d47988c68-q2p98    0/1     Running             4 (55s ago)   2m11s
+^C
+$ argocd app get tasktracker-dev
+Name:               argocd/tasktracker-dev
+Project:            dso202
+Server:             https://kubernetes.default.svc
+Namespace:          dso202-dev
+URL:                https://localhost:8443/applications/tasktracker-dev
+Source:
+- Repo:             https://github.com/tadashi-dev-eng/dso202-gitops.git
+  Target:           main
+  Path:             charts/tasktracker
+  Helm Values:      ../../environments/dev/values.yaml
+SyncWindow:         Sync Allowed
+Sync Policy:        Automated (Prune)
+Sync Status:        Synced to main (9dc39a1)
+Health Status:      Degraded
+
+GROUP  KIND            NAMESPACE   NAME                        STATUS  HEALTH    HOOK  MESSAGE
+       ServiceAccount  dso202-dev  tasktracker-backend         Synced                  serviceaccount/tasktracker-backend unchanged
+       ServiceAccount  dso202-dev  tasktracker-db              Synced                  serviceaccount/tasktracker-db unchanged
+       ServiceAccount  dso202-dev  tasktracker-frontend        Synced                  serviceaccount/tasktracker-frontend unchanged
+       ConfigMap       dso202-dev  tasktracker-config          Synced                  configmap/tasktracker-config unchanged
+       ConfigMap       dso202-dev  tasktracker-frontend-nginx  Synced                  configmap/tasktracker-frontend-nginx unchanged
+       Service         dso202-dev  tasktracker-db              Synced  Healthy         service/tasktracker-db unchanged
+apps   StatefulSet     dso202-dev  tasktracker-db              Synced  Healthy         statefulset rolling update complete 1 pods at revision tasktracker-db-57d4c4bf4c...
+       Service         dso202-dev  tasktracker-backend         Synced  Healthy         service/tasktracker-backend unchanged
+apps   Deployment      dso202-dev  tasktracker-backend         Synced  Degraded        Deployment "tasktracker-backend" exceeded its progress deadline
+       Service         dso202-dev  tasktracker-frontend        Synced  Healthy         
+apps   Deployment      dso202-dev  tasktracker-frontend        Synced  Healthy         
+batch  Job             dso202-dev  tasktracker-smoke-test              Healthy         
+$ kubectl get applications -n argocd
+NAME                  SYNC STATUS   HEALTH STATUS
+platform-dev          Synced        Healthy
+platform-staging      Synced        Healthy
+root                  Synced        Degraded
+sealed-secrets        Synced        Healthy
+tasktracker-dev       Synced        Degraded
+tasktracker-staging   Synced        Healthy
+$ kubectl get job -n dso202-dev
+NAME                     STATUS     COMPLETIONS   DURATION   AGE
+tasktracker-smoke-test   Complete   1/1           9s         5m27s
+$ curl -s -o /dev/null -w "dev frontend HTTP %{http_code}\n" http://localhost:30080/; curl -s http://localhost:30080/api/status; echo
+dev frontend HTTP 200
+{"status":"ok","db":"connected"}
+$ kubectl get deploy tasktracker-backend -n dso202-dev -o jsonpath="{range .status.conditions[*]}{.type}={.status} {.reason}: {.message}{\"\\n\"}{end}"
+Available=True MinimumReplicasAvailable: Deployment has minimum availability.
+Progressing=False ProgressDeadlineExceeded: ReplicaSet "tasktracker-backend-5d47988c68" has timed out progressing.

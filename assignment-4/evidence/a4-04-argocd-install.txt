@@ -1,0 +1,38 @@
+$ kubectl kustomize bootstrap/argocd | grep -E '^kind: (Deployment|StatefulSet)$' | sort | uniq -c
+      6 kind: Deployment
+      1 kind: StatefulSet
+$ kubectl kustomize bootstrap/argocd | grep 'image:' | sort -u
+        image: ghcr.io/dexidp/dex:v2.45.1
+        image: public.ecr.aws/docker/library/redis:8.2.3-alpine
+        image: quay.io/argoproj/argocd:v3.5.6
+$ kubectl apply -k bootstrap/argocd --server-side --force-conflicts | tail -8
+statefulset.apps/argocd-application-controller serverside-applied
+networkpolicy.networking.k8s.io/argocd-application-controller-network-policy serverside-applied
+networkpolicy.networking.k8s.io/argocd-applicationset-controller-network-policy serverside-applied
+networkpolicy.networking.k8s.io/argocd-dex-server-network-policy serverside-applied
+networkpolicy.networking.k8s.io/argocd-notifications-controller-network-policy serverside-applied
+networkpolicy.networking.k8s.io/argocd-redis-network-policy serverside-applied
+networkpolicy.networking.k8s.io/argocd-repo-server-network-policy serverside-applied
+networkpolicy.networking.k8s.io/argocd-server-network-policy serverside-applied
+$ kubectl wait --for=condition=Available deployment --all -n argocd --timeout=500s
+deployment.apps/argocd-applicationset-controller condition met
+deployment.apps/argocd-dex-server condition met
+deployment.apps/argocd-notifications-controller condition met
+deployment.apps/argocd-redis condition met
+deployment.apps/argocd-repo-server condition met
+deployment.apps/argocd-server condition met
+$ kubectl rollout status statefulset/argocd-application-controller -n argocd --timeout=300s
+partitioned roll out complete: 1 new pods have been updated...
+$ kubectl get pods -n argocd
+NAME                                                READY   STATUS    RESTARTS   AGE
+argocd-application-controller-0                     1/1     Running   0          3m7s
+argocd-applicationset-controller-58bb5c7479-xjhkq   1/1     Running   0          3m7s
+argocd-dex-server-dd6b85d9c-xrt4z                   1/1     Running   0          3m7s
+argocd-notifications-controller-6b85c65458-chddn    1/1     Running   0          3m7s
+argocd-redis-869b85489d-9t6s6                       1/1     Running   0          3m7s
+argocd-repo-server-5bf66565cd-zch4v                 1/1     Running   0          3m7s
+argocd-server-7474bb8f76-6j8wc                      1/1     Running   0          3m7s
+$ kubectl get crd | grep argoproj.io
+applications.argoproj.io      2026-11-14T17:28:10Z
+applicationsets.argoproj.io   2026-11-14T17:28:10Z
+appprojects.argoproj.io       2026-11-14T17:28:10Z

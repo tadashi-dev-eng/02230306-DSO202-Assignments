@@ -22,45 +22,6 @@
 
 ---
 
-## Repository Structure
-
-```
-assignment-3/
-├── kustomize/
-│   ├── base/                          # shared truth = the Assignment 2 architecture
-│   │   ├── kustomization.yaml         # resources, labels, images, configMap/secret generators
-│   │   ├── serviceaccounts.yaml       # frontend-sa / backend-sa / db-sa (no API token)
-│   │   ├── rbac-viewer.yaml           # read-only SA + Role + RoleBinding (no Secrets)
-│   │   ├── quota.yaml                 # ResourceQuota (nodeports 0) + LimitRange
-│   │   ├── database.yaml              # headless db-svc + StatefulSet db (volumeClaimTemplates)
-│   │   ├── backend.yaml / frontend.yaml   # ClusterIP Service + Deployment each
-│   │   ├── ingress.yaml               # TLS + /api and / routing; host is a placeholder
-│   │   ├── config/app.env, db.env, db-credentials.env   # generator inputs
-│   │   └── tls/                       # tasktracker.crt/.key - generated, git-ignored
-│   └── overlays/
-│       ├── dev/                       # namespace, replicas 1, merge config, inline JSON 6902
-│       └── prod/                      # namespace, replicas 2, SMP + JSON 6902 patches, PDBs
-├── helm/
-│   ├── task-tracker/                  # the chart
-│   │   ├── Chart.yaml                 # version 0.2.0, appVersion "1.0"
-│   │   ├── values.yaml                # documented defaults = the chart's interface
-│   │   ├── values.schema.json         # types, enums, patterns, ranges
-│   │   ├── .helmignore
-│   │   └── templates/
-│   │       ├── _helpers.tpl           # names, labels, selector labels, image, secret name
-│   │       ├── serviceaccounts.yaml, viewer-rbac.yaml, governance.yaml
-│   │       ├── configmap.yaml, secret.yaml (only without existingSecret)
-│   │       ├── database.yaml, backend.yaml, frontend.yaml, ingress.yaml
-│   │       ├── NOTES.txt
-│   │       └── tests/test-api.yaml    # helm test hook
-│   └── environments/
-│       ├── dev.yaml
-│       └── prod.yaml
-├── scripts/make-tls.sh                # one self-signed cert for every A3 host
-├── assets/                            # screenshots
-├── evidence/                          # raw terminal transcripts behind every screenshot
-└── .gitignore                         # *.key *.crt *.tgz
-```
 
 ### How to deploy
 

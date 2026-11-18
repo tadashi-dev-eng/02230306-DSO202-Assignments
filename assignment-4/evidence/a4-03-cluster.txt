@@ -1,0 +1,39 @@
+$ kind get clusters
+dso202
+taskflow
+$ kind delete cluster --name dso202
+Deleting cluster "dso202" ...
+Deleted nodes: ["dso202-control-plane" "dso202-worker2" "dso202-worker"]
+$ kind create cluster --name dso202-gitops --config cluster/kind-cluster.yaml
+Creating cluster "dso202-gitops" ...
+ • Ensuring node image (kindest/node:v1.36.1) 🖼  ...
+ ✓ Ensuring node image (kindest/node:v1.36.1) 🖼
+ • Preparing nodes 📦 📦 📦   ...
+ ✓ Preparing nodes 📦 📦 📦 
+ • Writing configuration 📜  ...
+ ✓ Writing configuration 📜
+ • Starting control-plane 🕹️  ...
+ ✓ Starting control-plane 🕹️
+ • Installing CNI 🔌  ...
+ ✓ Installing CNI 🔌
+ • Installing StorageClass 💾  ...
+ ✓ Installing StorageClass 💾
+ • Joining worker nodes 🚜  ...
+ ✓ Joining worker nodes 🚜
+Set kubectl context to "kind-dso202-gitops"
+You can now use your cluster with:
+
+kubectl cluster-info --context kind-dso202-gitops
+
+Have a question, bug, or feature request? Let us know! https://kind.sigs.k8s.io/#community 🙂
+$ kubectl config current-context
+kind-dso202-gitops
+$ kubectl get nodes
+NAME            STATUS     ROLES           AGE   VERSION
+control-plane   NotReady   control-plane   12s   v1.36.1
+worker-node-1   NotReady   <none>          1s    v1.36.1
+worker-node-2   NotReady   <none>          1s    v1.36.1
+$ docker ps --filter name=dso202-gitops --format '{{.Names}}   {{.Ports}}'
+dso202-gitops-worker   
+dso202-gitops-control-plane   127.0.0.1:30080->30080/tcp, 127.0.0.1:46645->6443/tcp
+dso202-gitops-worker2   

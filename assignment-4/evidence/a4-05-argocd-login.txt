@@ -1,0 +1,31 @@
+$ argocd admin initial-password -n argocd | sed 's/^[^ ]\+/<redacted-initial-password>/'
+<redacted-initial-password>
+
+ This password must be only used for first time login. We strongly recommend you update the password using `argocd account update-password`.
+$ argocd login localhost:8443 --username admin --password "$(cat ../dso202-keys/argocd-admin-initial.txt)" --insecure
+'admin:login' logged in successfully
+Context 'localhost:8443' updated
+$ kubectl get configmap argocd-cm -n argocd -o yaml | grep -E 'timeout.reconciliation|accounts.reviewer'
+  accounts.reviewer: login
+  timeout.reconciliation: 60s
+  timeout.reconciliation.jitter: 10s
+$ argocd version
+argocd: v3.5.6+c2b1e30
+  BuildDate: 2026-10-20T19:01:52Z
+  GitCommit: c2b1e3017e2cec86b122172e861dcd026453ae44
+  GitTreeState: clean
+  GoVersion: go1.26.10
+  Compiler: gc
+  Platform: linux/amd64
+argocd-server: v3.5.6
+  BuildDate: 2026-10-20T18:33:20Z
+  GitCommit: c2b1e3017e2cec86b122172e861dcd026453ae44
+  GitTreeState: clean
+  GitTag: v3.5.6
+  GoVersion: go1.26.10
+  Compiler: gc
+  Platform: linux/amd64
+  Kustomize Version: v5.8.1 2026-02-09T16:15:27Z
+  Helm Version: v4.2.1+gd591a19
+  Kubectl Version: v0.36.1
+  Jsonnet Version: v0.22.0

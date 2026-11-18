@@ -1,0 +1,71 @@
+$ git checkout main && git pull -q
+Already on 'main'
+Your branch is up to date with 'origin/main'.
+$ git tag -a v1.2.0 -m "Release: backend 1.1 with APP_ENV (fixed)"
+$ git push -q origin v1.2.0
+$ git checkout -q -b promote/staging-v1.2.0 && sed -i "s/^    targetRevision: v1.1.0\$/    targetRevision: v1.2.0/" argocd/applications/tasktracker-staging.yaml && git diff
+diff --git a/argocd/applications/tasktracker-staging.yaml b/argocd/applications/tasktracker-staging.yaml
+index ba64c35..02087d7 100644
+--- a/argocd/applications/tasktracker-staging.yaml
++++ b/argocd/applications/tasktracker-staging.yaml
+@@ -26,7 +26,7 @@ spec:
+     # A tag always resolves to the same commit, so this Application cannot
+     # change meaning until a commit edits this line. Promotion to staging is
+     # therefore a reviewed change to this value, followed by a manual sync.
+-    targetRevision: v1.1.0
++    targetRevision: v1.2.0
+     path: charts/tasktracker
+     helm:
+       releaseName: tasktracker
+$ git commit -qam "Promote staging to v1.2.0 (backend 1.1 with APP_ENV)" && git push -q -u origin promote/staging-v1.2.0 2>&1 | grep -v "^remote:"
+$ gh pr create --title "Promote staging to v1.2.0" --body "Task 7 Part B step 10: move tasktracker-staging to tag v1.2.0 (backend 1.1 with APP_ENV, proven healthy in dev). Staging never ran the faulty commit 9dc39a1." --base main --head promote/staging-v1.2.0
+https://github.com/tadashi-dev-eng/dso202-gitops/pull/6
+$ gh pr merge --squash --delete-branch
+From https://github.com/tadashi-dev-eng/dso202-gitops
+ * branch            main       -> FETCH_HEAD
+   bfb7dec..79057c5  main       -> origin/main
+Updating bfb7dec..79057c5
+Fast-forward
+ argocd/applications/tasktracker-staging.yaml | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+$ git checkout -q main && git pull -q && git log --oneline -1
+79057c5 Promote staging to v1.2.0 (backend 1.1 with APP_ENV) (#6)
+$ argocd app get tasktracker-staging | sed -n "/^Source/,/^Health/p"
+Source:
+- Repo:             https://github.com/tadashi-dev-eng/dso202-gitops.git
+  Target:           v1.2.0
+  Path:             charts/tasktracker
+  Helm Values:      ../../environments/staging/values.yaml
+SyncWindow:         Sync Allowed
+Sync Policy:        Manual
+Sync Status:        OutOfSync from v1.2.0 (bfb7dec)
+Health Status:      Healthy
+$ argocd app sync tasktracker-staging --timeout 300 | sed -n "/^Sync Status/,/^Message/p"
+Sync Status:        Synced to v1.2.0 (bfb7dec)
+Health Status:      Healthy
+
+Operation:          Sync
+Sync Revision:      bfb7deca26be212d1b755cbfe90e7f006e000658
+Phase:              Succeeded
+Start:              2026-11-15 11:41:34 +0600 +06
+Finished:           2026-11-15 11:42:17 +0600 +06
+Duration:           43s
+Message:            successfully synced (no more tasks)
+$ kubectl logs deploy/tasktracker-backend -n dso202-staging
+[config] backend 1.1 configuration loaded (APP_ENV=staging)
+[db] connected
+[server] listening on :8080
+$ kubectl logs job/tasktracker-smoke-test -n dso202-staging | tail -1
+smoke test passed on attempt 1
+$ argocd app history tasktracker-staging
+SOURCE  https://github.com/tadashi-dev-eng/dso202-gitops.git
+ID      DATE                           REVISION
+0       2026-11-15 11:12:40 +0600 +06  v1.0.0 (ebed13c)
+1       2026-11-15 11:26:14 +0600 +06  v1.1.0 (ab2131e)
+2       2026-11-15 11:42:17 +0600 +06  v1.2.0 (bfb7dec)
+$ argocd app history tasktracker-staging | grep -c 9dc39a1   # bad commit never deployed to staging
+0
+$ for rev in ebed13c ab2131e bfb7dec; do echo "$rev backend tag: $(git show $rev:environments/staging/values.yaml | sed -n "/^backend:/,/tag:/p" | grep -o "tag: \"[0-9.]*\"") APP_ENV: $(git show $rev:environments/staging/values.yaml | grep -o "APP_ENV: .*" || echo none)"; done
+ebed13c backend tag: tag: "1.0" APP_ENV: none
+ab2131e backend tag: tag: "1.0" APP_ENV: none
+bfb7dec backend tag: tag: "1.1" APP_ENV: APP_ENV: staging

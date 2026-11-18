@@ -1,0 +1,52 @@
+$ git tag -n1
+v1.0.0          Baseline release: images 1.0
+v1.1.0          Release: frontend 1.1
+$ argocd app get tasktracker-staging
+Name:               argocd/tasktracker-staging
+Project:            dso202
+Server:             https://kubernetes.default.svc
+Namespace:          dso202-staging
+URL:                https://localhost:8443/applications/tasktracker-staging
+Source:
+- Repo:             https://github.com/tadashi-dev-eng/dso202-gitops.git
+  Target:           v1.1.0
+  Path:             charts/tasktracker
+  Helm Values:      ../../environments/staging/values.yaml
+SyncWindow:         Sync Allowed
+Sync Policy:        Manual
+Sync Status:        OutOfSync from v1.1.0 (ab2131e)
+Health Status:      Healthy
+
+GROUP  KIND            NAMESPACE       NAME                        STATUS     HEALTH   HOOK      MESSAGE
+       ServiceAccount  dso202-staging  tasktracker-frontend        Synced                        serviceaccount/tasktracker-frontend created
+       ServiceAccount  dso202-staging  tasktracker-backend         Synced                        serviceaccount/tasktracker-backend created
+       ServiceAccount  dso202-staging  tasktracker-db              Synced                        serviceaccount/tasktracker-db created
+       ConfigMap       dso202-staging  tasktracker-config          Synced                        configmap/tasktracker-config created
+       ConfigMap       dso202-staging  tasktracker-frontend-nginx  Synced                        configmap/tasktracker-frontend-nginx created
+       Service         dso202-staging  tasktracker-db              Synced     Healthy            service/tasktracker-db created
+apps   StatefulSet     dso202-staging  tasktracker-db              Synced     Healthy            statefulset rolling update complete 1 pods at revision tasktracker-db-6f76fcc4d9...
+       Service         dso202-staging  tasktracker-backend         Synced     Healthy            service/tasktracker-backend created
+apps   Deployment      dso202-staging  tasktracker-backend         Synced     Healthy            deployment.apps/tasktracker-backend created
+       Service         dso202-staging  tasktracker-frontend        Synced     Healthy            service/tasktracker-frontend created
+apps   Deployment      dso202-staging  tasktracker-frontend        OutOfSync  Healthy            deployment.apps/tasktracker-frontend created
+batch  Job             dso202-staging  tasktracker-smoke-test      Succeeded  Synced   PostSync  Reached expected number of succeeded pods
+$ curl -s http://localhost:8081/ | grep -c "v1.1"   # 0 = staging still serves the old header
+0
+$ argocd app sync tasktracker-staging --timeout 300 | sed -n "/^Sync Status/,/^Message/p"
+Sync Status:        Synced to v1.1.0 (ab2131e)
+Health Status:      Healthy
+
+Operation:          Sync
+Sync Revision:      ab2131eeede488d51c4fb9e6d32c806e174c5fba
+Phase:              Succeeded
+Start:              2026-11-15 11:25:44 +0600 +06
+Finished:           2026-11-15 11:26:14 +0600 +06
+Duration:           30s
+Message:            successfully synced (no more tasks)
+$ curl -s http://localhost:8081/ | grep -o "release\">v1.1"   # port-forward re-attached to the new frontend Pod
+release">v1.1
+$ argocd app history tasktracker-staging
+SOURCE  https://github.com/tadashi-dev-eng/dso202-gitops.git
+ID      DATE                           REVISION
+0       2026-11-15 11:12:40 +0600 +06  v1.0.0 (ebed13c)
+1       2026-11-15 11:26:14 +0600 +06  v1.1.0 (ab2131e)

@@ -1,0 +1,26 @@
+$ argocd app get tasktracker-dev --refresh | sed -n "1,/^Health/p"
+Name:               argocd/tasktracker-dev
+Project:            dso202
+Server:             https://kubernetes.default.svc
+Namespace:          dso202-dev
+URL:                https://localhost:8443/applications/tasktracker-dev
+Sources:
+- Repo:             https://github.com/tadashi-dev-eng/dso202-gitops.git
+  Target:           main
+  Path:             charts/tasktracker
+  Helm Values:      $values/environments/dev/values.yaml
+- Repo:             https://github.com/tadashi-dev-eng/dso202-gitops.git
+  Target:           main
+  Ref:              values
+SyncWindow:         Sync Allowed
+Sync Policy:        Automated (Prune)
+Sync Status:        Synced to main
+Health Status:      Healthy
+$ kubectl get applications -n argocd
+NAME                  SYNC STATUS   HEALTH STATUS
+platform-dev          Synced        Healthy
+platform-staging      Synced        Healthy
+root                  Synced        Healthy
+sealed-secrets        Synced        Healthy
+tasktracker-dev       Synced        Healthy
+tasktracker-staging   Synced        Healthy

@@ -1,0 +1,26 @@
+$ export SEALED_SECRETS_CONTROLLER_NAMESPACE=sealed-secrets
+for env in dev staging; do
+  kubectl create secret generic tasktracker-credentials --namespace dso202-$env --from-env-file=secrets-plain/$env.env --dry-run=client -o yaml | kubeseal --format yaml > platform/$env/tasktracker-credentials.sealed.yaml
+done
+$ ls -l platform/dev platform/staging
+platform/dev:
+total 12
+-rw-rw-r-- 1 tadashi tadashi 1620 Nov 14 23:22 quota-and-limits.yaml
+-rw-rw-r-- 1 tadashi tadashi 1545 Nov 14 23:22 rbac.yaml
+-rw-rw-r-- 1 tadashi tadashi 3271 Nov 15 11:05 tasktracker-credentials.sealed.yaml
+
+platform/staging:
+total 12
+-rw-rw-r-- 1 tadashi tadashi 1640 Nov 14 23:22 quota-and-limits.yaml
+-rw-rw-r-- 1 tadashi tadashi 1569 Nov 14 23:22 rbac.yaml
+-rw-rw-r-- 1 tadashi tadashi 3287 Nov 15 11:05 tasktracker-credentials.sealed.yaml
+$ grep -E "^kind|name:|namespace:|DB_|POSTGRES_" platform/dev/tasktracker-credentials.sealed.yaml | cut -c1-90
+kind: SealedSecret
+  name: tasktracker-credentials
+  namespace: dso202-dev
+    DB_PASSWORD: AgCbVd6DOsvS6rgshAMezxID0h5ZC50mrsgyFgouMoJvMt+QFSmFO2SkVy0GsIyzLUBfv90Qm
+    DB_USER: AgBD6IexkxeHY9dsV2Goq/nMJKnnf2scGe6Ij98ylRqFST5dpgPVi2Lp49t1rfSbUMrNX/f3rAi6H
+    POSTGRES_PASSWORD: AgCqAbaJ5I/cCv28DDb2YRhIHHLrJoD9p73lml4/JZ3OpQ2qBV1PlhhFYcx6XNI1ItJ
+    POSTGRES_USER: AgCCwLHtc0JRMemcurvH78K5VGB1t4/lhb5sYyMsgy3FcAnWEiOhONf+b45g4wnO7H5CKJP
+      name: tasktracker-credentials
+      namespace: dso202-dev

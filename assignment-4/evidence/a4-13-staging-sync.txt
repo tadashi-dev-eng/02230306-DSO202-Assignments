@@ -1,0 +1,89 @@
+$ kubectl get applications -n argocd
+NAME                  SYNC STATUS   HEALTH STATUS
+platform-dev          Synced        Healthy
+platform-staging      Synced        Healthy
+root                  Synced        Healthy
+sealed-secrets        Synced        Healthy
+tasktracker-dev       Synced        Healthy
+tasktracker-staging   OutOfSync     Missing
+$ argocd app get root | sed -n "/^Sync Status/,/^Health/p"
+Sync Status:        Synced to main (2167a8a)
+Health Status:      Healthy
+$ argocd app get tasktracker-staging
+Name:               argocd/tasktracker-staging
+Project:            dso202
+Server:             https://kubernetes.default.svc
+Namespace:          dso202-staging
+URL:                https://localhost:8443/applications/tasktracker-staging
+Source:
+- Repo:             https://github.com/tadashi-dev-eng/dso202-gitops.git
+  Target:           v1.0.0
+  Path:             charts/tasktracker
+  Helm Values:      ../../environments/staging/values.yaml
+SyncWindow:         Sync Allowed
+Sync Policy:        Manual
+Sync Status:        OutOfSync from v1.0.0 (ebed13c)
+Health Status:      Missing
+
+GROUP  KIND            NAMESPACE       NAME                        STATUS     HEALTH   HOOK  MESSAGE
+       ConfigMap       dso202-staging  tasktracker-config          OutOfSync  Missing        
+       ConfigMap       dso202-staging  tasktracker-frontend-nginx  OutOfSync  Missing        
+       Service         dso202-staging  tasktracker-backend         OutOfSync  Missing        
+       Service         dso202-staging  tasktracker-db              OutOfSync  Missing        
+       Service         dso202-staging  tasktracker-frontend        OutOfSync  Missing        
+       ServiceAccount  dso202-staging  tasktracker-backend         OutOfSync  Missing        
+       ServiceAccount  dso202-staging  tasktracker-db              OutOfSync  Missing        
+       ServiceAccount  dso202-staging  tasktracker-frontend        OutOfSync  Missing        
+apps   Deployment      dso202-staging  tasktracker-backend         OutOfSync  Missing        
+apps   Deployment      dso202-staging  tasktracker-frontend        OutOfSync  Missing        
+apps   StatefulSet     dso202-staging  tasktracker-db              OutOfSync  Missing        
+$ argocd app sync tasktracker-staging --timeout 300 | tail -16
+Duration:           1m38s
+Message:            successfully synced (no more tasks)
+
+GROUP  KIND            NAMESPACE       NAME                        STATUS     HEALTH   HOOK      MESSAGE
+       ServiceAccount  dso202-staging  tasktracker-frontend        Synced                        serviceaccount/tasktracker-frontend created
+       ServiceAccount  dso202-staging  tasktracker-backend         Synced                        serviceaccount/tasktracker-backend created
+       ServiceAccount  dso202-staging  tasktracker-db              Synced                        serviceaccount/tasktracker-db created
+       ConfigMap       dso202-staging  tasktracker-config          Synced                        configmap/tasktracker-config created
+       ConfigMap       dso202-staging  tasktracker-frontend-nginx  Synced                        configmap/tasktracker-frontend-nginx created
+       Service         dso202-staging  tasktracker-db              Synced     Healthy            service/tasktracker-db created
+apps   StatefulSet     dso202-staging  tasktracker-db              Synced     Healthy            statefulset rolling update complete 1 pods at revision tasktracker-db-6f76fcc4d9...
+       Service         dso202-staging  tasktracker-backend         Synced     Healthy            service/tasktracker-backend created
+apps   Deployment      dso202-staging  tasktracker-backend         Synced     Healthy            deployment.apps/tasktracker-backend created
+       Service         dso202-staging  tasktracker-frontend        Synced     Healthy            service/tasktracker-frontend created
+apps   Deployment      dso202-staging  tasktracker-frontend        Synced     Healthy            deployment.apps/tasktracker-frontend created
+batch  Job             dso202-staging  tasktracker-smoke-test      Succeeded  Synced   PostSync  Reached expected number of succeeded pods
+$ argocd app get root | sed -n "/^Sync Status/,\$p"
+Sync Status:        Synced to main (2167a8a)
+Health Status:      Healthy
+
+GROUP        KIND         NAMESPACE  NAME                 STATUS  HEALTH   HOOK  MESSAGE
+argoproj.io  AppProject   argocd     dso202               Synced                 appproject.argoproj.io/dso202 unchanged
+argoproj.io  Application  argocd     sealed-secrets       Synced  Healthy        application.argoproj.io/sealed-secrets unchanged
+argoproj.io  Application  argocd     platform-dev         Synced  Healthy        application.argoproj.io/platform-dev unchanged
+argoproj.io  Application  argocd     platform-staging     Synced  Healthy        application.argoproj.io/platform-staging unchanged
+argoproj.io  Application  argocd     tasktracker-dev      Synced  Healthy        application.argoproj.io/tasktracker-dev created
+argoproj.io  Application  argocd     tasktracker-staging  Synced  Healthy        application.argoproj.io/tasktracker-staging created
+$ kubectl get applications -n argocd
+NAME                  SYNC STATUS   HEALTH STATUS
+platform-dev          Synced        Healthy
+platform-staging      Synced        Healthy
+root                  Synced        Healthy
+sealed-secrets        Synced        Healthy
+tasktracker-dev       Synced        Healthy
+tasktracker-staging   Synced        Healthy
+$ kubectl get svc -n dso202-staging
+NAME                   TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)          AGE
+tasktracker-backend    ClusterIP   10.96.67.198    <none>        8080/TCP         83s
+tasktracker-db         ClusterIP   None            <none>        5432/TCP         114s
+tasktracker-frontend   NodePort    10.96.150.227   <none>        8080:30081/TCP   41s
+$ kubectl logs job/tasktracker-smoke-test -n dso202-staging | tail -1
+smoke test passed on attempt 1
+$ kubectl port-forward -n dso202-staging svc/tasktracker-frontend 8081:8080 &
+Forwarding from 127.0.0.1:8081 -> 8080
+Forwarding from [::1]:8081 -> 8080
+$ curl -s -o /dev/null -w "staging frontend HTTP %{http_code}\n" http://localhost:8081/
+staging frontend HTTP 200
+$ curl -s http://localhost:8081/api/status; echo
+{"status":"ok","db":"connected"}

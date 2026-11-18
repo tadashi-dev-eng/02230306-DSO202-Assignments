@@ -1,0 +1,55 @@
+$ kubectl get applications -n argocd
+NAME               SYNC STATUS   HEALTH STATUS
+platform-dev       Synced        Healthy
+platform-staging   Synced        Healthy
+root               Synced        Healthy
+sealed-secrets     Synced        Healthy
+$ kubectl get namespaces | grep dso202
+dso202-dev           Active   9s
+dso202-staging       Active   9s
+$ kubectl get sealedsecret -n dso202-dev
+NAME                      STATUS   SYNCED   AGE
+tasktracker-credentials            True     8s
+$ kubectl get sealedsecret -n dso202-staging
+NAME                      STATUS   SYNCED   AGE
+tasktracker-credentials            True     8s
+$ kubectl describe secret tasktracker-credentials -n dso202-dev
+Name:         tasktracker-credentials
+Namespace:    dso202-dev
+Labels:       <none>
+Annotations:  <none>
+
+Type:  Opaque
+
+Data
+====
+DB_PASSWORD:        32 bytes
+DB_USER:            15 bytes
+POSTGRES_PASSWORD:  32 bytes
+POSTGRES_USER:      15 bytes
+$ kubectl describe secret tasktracker-credentials -n dso202-staging | tail -7
+
+Data
+====
+DB_PASSWORD:        32 bytes
+DB_USER:            19 bytes
+POSTGRES_PASSWORD:  32 bytes
+POSTGRES_USER:      19 bytes
+$ kubectl get resourcequota,limitrange -n dso202-dev
+NAME                     REQUEST                                                                                                                                                                            LIMIT                                   AGE
+resourcequota/ns-quota   persistentvolumeclaims: 0/2, pods: 0/10, requests.cpu: 0/1, requests.memory: 0/1Gi, requests.storage: 0/2Gi, services: 0/4, services.loadbalancers: 0/0, services.nodeports: 0/1   limits.cpu: 0/3, limits.memory: 0/2Gi   9s
+
+NAME                   CREATED AT
+limitrange/ns-limits   2026-11-15T05:07:17Z
+$ kubectl get resourcequota,limitrange,role,rolebinding -n dso202-staging
+NAME                     REQUEST                                                                                                                                                                            LIMIT                                   AGE
+resourcequota/ns-quota   persistentvolumeclaims: 0/2, pods: 0/10, requests.cpu: 0/1, requests.memory: 0/1Gi, requests.storage: 0/2Gi, services: 0/4, services.loadbalancers: 0/0, services.nodeports: 0/1   limits.cpu: 0/3, limits.memory: 0/2Gi   9s
+
+NAME                   CREATED AT
+limitrange/ns-limits   2026-11-15T05:07:17Z
+
+NAME                                        CREATED AT
+role.rbac.authorization.k8s.io/app-reader   2026-11-15T05:07:17Z
+
+NAME                                                       ROLE              AGE
+rolebinding.rbac.authorization.k8s.io/app-viewer-binding   Role/app-reader   9s

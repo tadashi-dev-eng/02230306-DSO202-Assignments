@@ -1,0 +1,66 @@
+$ git add charts/tasktracker/templates/drill-quota.yaml && git commit -qm "Task 8 drill 4: add ResourceQuota to the workload chart (expect project rejection)" && git push -q origin main && git log --oneline -1
+dd8615b Task 8 drill 4: add ResourceQuota to the workload chart (expect project rejection)
+$ argocd app get tasktracker-dev --refresh >/dev/null; sleep 30; argocd app get tasktracker-dev
+Name:               argocd/tasktracker-dev
+Project:            dso202
+Server:             https://kubernetes.default.svc
+Namespace:          dso202-dev
+URL:                https://localhost:8443/applications/tasktracker-dev
+Source:
+- Repo:             https://github.com/tadashi-dev-eng/dso202-gitops.git
+  Target:           main
+  Path:             charts/tasktracker
+  Helm Values:      ../../environments/dev/values.yaml
+SyncWindow:         Sync Allowed
+Sync Policy:        Automated (Prune)
+Sync Status:        OutOfSync from main (dd8615b)
+Health Status:      Healthy
+
+GROUP  KIND            NAMESPACE   NAME                        STATUS   HEALTH   HOOK  MESSAGE
+       ResourceQuota   dso202-dev  drill-quota                 Unknown  Missing        resource :ResourceQuota is not permitted in project dso202
+       ConfigMap       dso202-dev  tasktracker-config          Synced                  
+       ConfigMap       dso202-dev  tasktracker-frontend-nginx  Synced                  
+       Service         dso202-dev  tasktracker-backend         Synced   Healthy        
+       Service         dso202-dev  tasktracker-db              Synced   Healthy        
+       Service         dso202-dev  tasktracker-frontend        Synced   Healthy        
+       ServiceAccount  dso202-dev  tasktracker-backend         Synced                  
+       ServiceAccount  dso202-dev  tasktracker-db              Synced                  
+       ServiceAccount  dso202-dev  tasktracker-frontend        Synced                  
+apps   Deployment      dso202-dev  tasktracker-backend         Synced   Healthy        
+apps   Deployment      dso202-dev  tasktracker-frontend        Synced   Healthy        
+apps   StatefulSet     dso202-dev  tasktracker-db              Synced   Healthy        
+batch  Job             dso202-dev  tasktracker-smoke-test               Healthy        
+$ kubectl get application tasktracker-dev -n argocd -o jsonpath="{range .status.conditions[*]}{.type}: {.message}{\"\\n\"}{end}{.status.operationState.phase}: {.status.operationState.message}{\"\\n\"}"
+Running: one or more synchronization tasks are not valid: resource :ResourceQuota is not permitted in project dso202. Retrying attempt #2 at 5:46AM.
+$ kubectl get resourcequota -n dso202-dev
+NAME       REQUEST                                                                                                                                                                                     LIMIT                                           AGE
+ns-quota   persistentvolumeclaims: 1/2, pods: 3/10, requests.cpu: 400m/1, requests.memory: 448Mi/1Gi, requests.storage: 1Gi/2Gi, services: 3/4, services.loadbalancers: 0/0, services.nodeports: 1/1   limits.cpu: 1700m/3, limits.memory: 896Mi/2Gi   39m
+$ kubectl get applications -n argocd
+NAME                  SYNC STATUS   HEALTH STATUS
+platform-dev          Synced        Healthy
+platform-staging      Synced        Healthy
+root                  Synced        Healthy
+sealed-secrets        Synced        Healthy
+tasktracker-dev       OutOfSync     Healthy
+tasktracker-staging   Synced        Healthy
+$ argocd app get tasktracker-staging | sed -n "/Target/p;/^Sync Status/,/^Health/p"
+  Target:           v1.2.0
+Sync Status:        Synced to v1.2.0 (bfb7dec)
+Health Status:      Healthy
+$ git revert --no-edit dd8615b && git push -q origin main && git log --oneline -1
+[main 9aa44cd] Revert "Task 8 drill 4: add ResourceQuota to the workload chart (expect project rejection)"
+ Date: Sun Nov 15 11:46:50 2026 +0600
+ 1 file changed, 17 deletions(-)
+ delete mode 100644 charts/tasktracker/templates/drill-quota.yaml
+9aa44cd Revert "Task 8 drill 4: add ResourceQuota to the workload chart (expect project rejection)"
+$ argocd app get tasktracker-dev --refresh >/dev/null; sleep 30; argocd app get tasktracker-dev | sed -n "/^Sync Status/,/^Health/p"
+Sync Status:        Synced to main (9aa44cd)
+Health Status:      Healthy
+$ kubectl get applications -n argocd
+NAME                  SYNC STATUS   HEALTH STATUS
+platform-dev          Synced        Healthy
+platform-staging      Synced        Healthy
+root                  Synced        Healthy
+sealed-secrets        Synced        Healthy
+tasktracker-dev       Synced        Healthy
+tasktracker-staging   Synced        Healthy

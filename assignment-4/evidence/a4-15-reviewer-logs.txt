@@ -1,0 +1,40 @@
+$ git log --oneline -1
+574ac74 Task 6: grant reviewer read access to logs in dso202 (Argo CD 3.x separate logs resource)
+$ git show --stat --format= HEAD
+ bootstrap/argocd/argocd-rbac-cm-patch.yaml | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+$ kubectl apply -k bootstrap/argocd --server-side --force-conflicts | grep -E "argocd-rbac-cm|argocd-cm "
+configmap/argocd-cm serverside-applied
+configmap/argocd-rbac-cm serverside-applied
+$ kubectl get configmap argocd-rbac-cm -n argocd -o jsonpath="{.data.policy\.csv}" | grep "^p,"
+p, reviewer, applications, get, dso202/*, allow
+p, reviewer, projects, get, dso202, allow
+p, reviewer, logs, get, dso202/*, allow
+$ argocd --argocd-context reviewer account can-i get logs 'dso202/tasktracker-dev'
+yes
+$ argocd context
+CURRENT  NAME            SERVER
+         localhost:8443  localhost:8443
+*        reviewer        localhost:8443
+$ argocd login localhost:8443 --username admin --password "$(cat ../dso202-keys/argocd-admin-initial.txt)" --insecure
+'admin:login' logged in successfully
+Context 'localhost:8443' updated
+$ argocd context
+CURRENT  NAME            SERVER
+*        localhost:8443  localhost:8443
+         reviewer        localhost:8443
+$ kubectl get appproject dso202 -n argocd -o jsonpath="{range .spec.namespaceResourceWhitelist[*]}{.group}/{.kind}{\"\\n\"}{end}"
+apps/Deployment
+apps/StatefulSet
+/Service
+/ConfigMap
+/ServiceAccount
+batch/Job
+apps/ReplicaSet
+/Pod
+$ argocd --argocd-context reviewer account can-i get logs 'dso202/tasktracker-dev'
+yes
+$ argocd --argocd-context reviewer app logs tasktracker-dev --group apps --kind Deployment --name tasktracker-backend --tail 4
+[db] connected
+[server] listening on :8080
+$ argocd --argocd-context reviewer app logs tasktracker-staging --group apps --kind Deployment --name tasktracker-backend --tail 2

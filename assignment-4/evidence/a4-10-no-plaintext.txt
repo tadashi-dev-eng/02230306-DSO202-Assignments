@@ -1,0 +1,20 @@
+$ for env in dev staging; do
+  for key in DB_USER DB_PASSWORD; do            # POSTGRES_* carry the same values
+    value=$(grep "^$key=" secrets-plain/$env.env | cut -d= -f2-)
+    hits=$(git log -p --all -S"$value" | head | wc -l)
+    echo "$env $key: git log -p --all -S<value> | head  -> $hits lines"
+  done
+done
+dev DB_USER: git log -p --all -S<value> | head  -> 0 lines
+dev DB_PASSWORD: git log -p --all -S<value> | head  -> 0 lines
+staging DB_USER: git log -p --all -S<value> | head  -> 0 lines
+staging DB_PASSWORD: git log -p --all -S<value> | head  -> 0 lines
+$ git status --short --ignored
+!! secrets-plain/
+$ install -m 600 secrets-plain/dev.env ../dso202-keys/credentials-dev.env; install -m 600 secrets-plain/staging.env ../dso202-keys/credentials-staging.env; rm secrets-plain/*.env
+$ ls -l ../dso202-keys/
+total 20
+-rw------- 1 tadashi tadashi   17 Nov 14 23:31 argocd-admin-initial.txt
+-rw------- 1 tadashi tadashi  150 Nov 15 11:07 credentials-dev.env
+-rw------- 1 tadashi tadashi  158 Nov 15 11:07 credentials-staging.env
+-rw------- 1 tadashi tadashi 7087 Nov 15 11:05 sealing-key.backup.yaml

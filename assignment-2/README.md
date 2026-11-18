@@ -7,45 +7,7 @@
 | **2.3 RBAC** | All Pods ran as the namespace `default` ServiceAccount with an API token mounted; one bonus read-only SA | A dedicated ServiceAccount per tier with **no token mounted**; read-only viewer; least-privilege CD **deployer** (with the `update`/`patch` pitfall reproduced and fixed); the built-in `view` ClusterRole reused for a group through a RoleBinding |
 | **Unit II practical — CSR user** | Only the cluster-admin kubeconfig existed | A real user **`tadashi`** (group `dev-team`) authenticated by an x509 certificate signed through the CSR API, with its own kube context |
 | **2.4 Operators** | Only built-in resource types | A **`TaskTracker` CRD** describing the whole app in domain terms, with schema validation that enforces the Assignment 1 rules at the API server, plus **aggregated ClusterRoles** |
-
-> **Not covered:** 2.5 Service Mesh (Istio) is listed in the notes' introduction but its section is not in the provided notes, so it is out of scope here.
-
 ---
-
-## Repository Structure
-
-```
-assignment-2/
-├── 00-namespace.yaml
-├── 01-configmap.yaml            # DB_HOST=db-0.db-svc, BACKEND_URL="." (same-origin via Ingress)
-├── 02-secret.yaml
-├── 03-quota.yaml                # services.nodeports: 0, services.loadbalancers: 0
-├── 04-serviceaccounts.yaml      # frontend-sa / backend-sa / db-sa, automountServiceAccountToken: false
-├── database/
-│   ├── service.yaml             # headless db-svc (governing Service)
-│   └── statefulset.yaml         # 2.1
-├── backend/                     # Deployment + ClusterIP
-├── frontend/                    # Deployment + ClusterIP (was NodePort)
-├── ingress-controller/
-│   └── ingress-nginx-kind.yaml  # NGINX Ingress controller v1.15.1, kind provider manifest (pinned copy)
-├── ingress/
-│   └── ingress.yaml             # 2.2 - TLS, host + path routing, NGINX annotations
-├── rbac/
-│   ├── viewer.yaml              # 2.3 read-only ServiceAccount
-│   ├── deployer.yaml            # 2.3 least-privilege CD ServiceAccount
-│   └── developer.yaml           # 2.3 group + user bindings for the CSR user
-├── user/
-│   └── create-user.sh           # CSR practical: key -> CSR -> approve -> kubeconfig context
-├── operator/
-│   ├── crd.yaml                 # 2.4 TaskTracker CRD with OpenAPI validation
-│   ├── tasktracker.yaml         # a valid Custom Resource
-│   ├── tasktracker-invalid.yaml # deliberately invalid CR (validation demo)
-│   └── aggregate-clusterrole.yaml
-├── assets/                      # screenshots
-├── evidence/                    # raw terminal transcripts behind every screenshot
-├── .gitignore                   # *.key *.crt *.csr *.kubeconfig - credentials never committed
-└── README.md
-```
 
 ### How to deploy
 

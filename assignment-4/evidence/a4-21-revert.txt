@@ -1,0 +1,46 @@
+$ git checkout -b revert/backend-1.1
+Switched to a new branch 'revert/backend-1.1'
+$ git revert --no-edit 9dc39a16079179fb0d2e751774dd60a97d68a995
+[revert/backend-1.1 74c5af3] Revert "Release backend 1.1 (dev and staging values) (#3)"
+ Date: Sun Nov 15 11:29:50 2026 +0600
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+$ git push -u origin revert/backend-1.1 2>&1 | grep -v "^remote:"
+To https://github.com/tadashi-dev-eng/dso202-gitops.git
+ * [new branch]      revert/backend-1.1 -> revert/backend-1.1
+branch 'revert/backend-1.1' set up to track 'origin/revert/backend-1.1'.
+$ gh pr create --title "Revert \"Release backend 1.1\"" --body "Task 7 Part B step 8: backend 1.1 crash-loops in dev ([config] FATAL: required environment variable APP_ENV is not set). argocd app rollback is refused while auto-sync is enabled, so recovery is a git revert of the bad commit 9dc39a1." --base main --head revert/backend-1.1
+https://github.com/tadashi-dev-eng/dso202-gitops/pull/4
+$ gh pr merge --squash --delete-branch
+From https://github.com/tadashi-dev-eng/dso202-gitops
+ * branch            main       -> FETCH_HEAD
+   9dc39a1..b89cca0  main       -> origin/main
+Updating 9dc39a1..b89cca0
+Fast-forward
+ environments/dev/values.yaml     | 2 +-
+ environments/staging/values.yaml | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+$ git checkout -q main && git pull -q && git log --oneline -3
+b89cca0 Revert "Release backend 1.1 (dev and staging values) (#3)" (#4)
+9dc39a1 Release backend 1.1 (dev and staging values) (#3)
+694e81d Promote staging to v1.1.0 (frontend 1.1) (#2)
+$ kubectl get pods -n dso202-dev
+NAME                                    READY   STATUS      RESTARTS   AGE
+tasktracker-backend-f79494d5f-mvjw5     1/1     Running     0          29m
+tasktracker-db-0                        1/1     Running     0          29m
+tasktracker-frontend-66cd7444d7-ccr9g   1/1     Running     0          14m
+tasktracker-smoke-test-4k7zm            0/1     Completed   0          37s
+$ argocd app get tasktracker-dev | sed -n "/^Sync Status/,/^Health/p"
+Sync Status:        Synced to main (b89cca0)
+Health Status:      Healthy
+$ kubectl get deploy tasktracker-backend -n dso202-dev -o jsonpath="{.spec.template.spec.containers[0].image}{\"\\n\"}"
+sarojsanyasi/dso202-backend:1.0
+$ kubectl logs job/tasktracker-smoke-test -n dso202-dev | tail -1
+smoke test passed on attempt 1
+$ kubectl get applications -n argocd
+NAME                  SYNC STATUS   HEALTH STATUS
+platform-dev          Synced        Healthy
+platform-staging      Synced        Healthy
+root                  Synced        Healthy
+sealed-secrets        Synced        Healthy
+tasktracker-dev       Synced        Healthy
+tasktracker-staging   Synced        Healthy

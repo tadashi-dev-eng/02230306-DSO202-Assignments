@@ -1,0 +1,52 @@
+$ kubectl get pods -n dso202-dev -w --output-watch-events
+EVENT      NAME               READY   STATUS    RESTARTS   AGE
+ADDED      tasktracker-db-0   0/1     Pending   0          0s
+MODIFIED   tasktracker-db-0   0/1     Running             0          8s
+MODIFIED   tasktracker-db-0   1/1     Running             0          35s
+ADDED      tasktracker-backend-f79494d5f-mvjw5   0/1     Pending             0          0s
+MODIFIED   tasktracker-backend-f79494d5f-mvjw5   0/1     Running             0          1s
+MODIFIED   tasktracker-backend-f79494d5f-mvjw5   1/1     Running             0          47s
+ADDED      tasktracker-frontend-7c4899464b-gqlrc   0/1     Pending             0          0s
+MODIFIED   tasktracker-frontend-7c4899464b-gqlrc   0/1     Running             0          1s
+MODIFIED   tasktracker-frontend-7c4899464b-gqlrc   1/1     Running             0          7s
+ADDED      tasktracker-smoke-test-72hfc            0/1     Pending             0          0s
+MODIFIED   tasktracker-smoke-test-72hfc            1/1     Running             0          3s
+MODIFIED   tasktracker-smoke-test-72hfc            0/1     Completed           0          4s
+MODIFIED   tasktracker-smoke-test-72hfc            0/1     Completed           0          5s
+MODIFIED   tasktracker-smoke-test-72hfc            0/1     Completed           0          6s
+^C
+$ kubectl get job -n dso202-dev
+NAME                     STATUS     COMPLETIONS   DURATION   AGE
+tasktracker-smoke-test   Complete   1/1           6s         24s
+$ kubectl logs job/tasktracker-smoke-test -n dso202-dev
+[{"id":1,"title":"Set up kind cluster","description":"Bring up the local cluster from Practical 1","status":"done","created_at":"2026-11-15T05:09:09.635Z"},{"id":2,"title":"Write namespace manifest","description":"One namespace for all assignment resources","status":"in_progress","created_at":"2026-11-15T05:09:09.635Z"},{"id":3,"title":"Wire ConfigMap and Secret","description":"DB_* and POSTGRES_* must carry matching values","status":"pending","created_at":"2026-11-15T05:09:09.635Z"}]
+smoke test passed on attempt 1
+$ argocd app get tasktracker-dev
+Name:               argocd/tasktracker-dev
+Project:            dso202
+Server:             https://kubernetes.default.svc
+Namespace:          dso202-dev
+URL:                https://localhost:8443/applications/tasktracker-dev
+Source:
+- Repo:             https://github.com/tadashi-dev-eng/dso202-gitops.git
+  Target:           main
+  Path:             charts/tasktracker
+  Helm Values:      ../../environments/dev/values.yaml
+SyncWindow:         Sync Allowed
+Sync Policy:        Automated (Prune)
+Sync Status:        Synced to main (2167a8a)
+Health Status:      Healthy
+
+GROUP  KIND            NAMESPACE   NAME                        STATUS     HEALTH   HOOK      MESSAGE
+       ServiceAccount  dso202-dev  tasktracker-backend         Synced                        serviceaccount/tasktracker-backend created
+       ServiceAccount  dso202-dev  tasktracker-db              Synced                        serviceaccount/tasktracker-db created
+       ServiceAccount  dso202-dev  tasktracker-frontend        Synced                        serviceaccount/tasktracker-frontend created
+       ConfigMap       dso202-dev  tasktracker-config          Synced                        configmap/tasktracker-config created
+       ConfigMap       dso202-dev  tasktracker-frontend-nginx  Synced                        configmap/tasktracker-frontend-nginx created
+       Service         dso202-dev  tasktracker-db              Synced     Healthy            service/tasktracker-db created
+apps   StatefulSet     dso202-dev  tasktracker-db              Synced     Healthy            statefulset rolling update complete 1 pods at revision tasktracker-db-57d4c4bf4c...
+       Service         dso202-dev  tasktracker-backend         Synced     Healthy            service/tasktracker-backend created
+apps   Deployment      dso202-dev  tasktracker-backend         Synced     Healthy            deployment.apps/tasktracker-backend created
+       Service         dso202-dev  tasktracker-frontend        Synced     Healthy            service/tasktracker-frontend created
+apps   Deployment      dso202-dev  tasktracker-frontend        Synced     Healthy            deployment.apps/tasktracker-frontend created
+batch  Job             dso202-dev  tasktracker-smoke-test      Succeeded  Synced   PostSync  Reached expected number of succeeded pods

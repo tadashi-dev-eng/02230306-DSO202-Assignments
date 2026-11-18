@@ -1,0 +1,27 @@
+$ kubectl get deployment -n dso202-dev
+NAME                   READY   UP-TO-DATE   AVAILABLE   AGE
+tasktracker-backend    1/1     1            1           33m
+tasktracker-frontend   1/1     1            1           32m
+$ kubectl scale deployment/tasktracker-backend -n dso202-dev --replicas=3
+deployment.apps/tasktracker-backend scaled
+$ kubectl get deployment/tasktracker-backend -n dso202-dev -w     # started in a second terminal BEFORE the scale
+NAME                  READY   UP-TO-DATE   AVAILABLE   AGE
+tasktracker-backend   1/1     1            1           33m
+tasktracker-backend   1/3     1            1           33m
+tasktracker-backend   1/3     3            1           33m
+tasktracker-backend   1/1     3            1           33m
+^C
+$ kubectl get deployment/tasktracker-backend -n dso202-dev
+NAME                  READY   UP-TO-DATE   AVAILABLE   AGE
+tasktracker-backend   1/1     1            1           34m
+$ argocd app get tasktracker-dev | sed -n "/^Sync Status/,/^Health/p"
+Sync Status:        Synced to main (79057c5)
+Health Status:      Healthy
+$ kubectl get application tasktracker-dev -n argocd -o jsonpath="{.spec.syncPolicy.automated}{\"\\n\"}"
+{"prune":true,"selfHeal":true}
+$ kubectl get application tasktracker-dev -n argocd -o jsonpath="initiatedBy={.status.operationState.operation.initiatedBy} phase={.status.operationState.phase} finished={.status.operationState.finishedAt}{\"\\n\"}"
+initiatedBy={"automated":true} phase=Succeeded finished=2026-11-15T05:43:04Z
+$ kubectl get events -n dso202-dev --field-selector involvedObject.name=tasktracker-backend --sort-by=.lastTimestamp | tail -3
+3m26s       Normal   ScalingReplicaSet   deployment/tasktracker-backend   Scaled down replica set tasktracker-backend-f79494d5f from 1 to 0
+45s         Normal   ScalingReplicaSet   deployment/tasktracker-backend   Scaled up replica set tasktracker-backend-7684556557 from 1 to 3
+40s         Normal   ScalingReplicaSet   deployment/tasktracker-backend   Scaled down replica set tasktracker-backend-7684556557 from 3 to 1

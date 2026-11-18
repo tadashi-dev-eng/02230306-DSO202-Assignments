@@ -1,0 +1,27 @@
+$ gh pr list --state merged --limit 20
+6	Promote staging to v1.2.0	promote/staging-v1.2.0	MERGED	2026-11-15T05:40:52Z
+5	Fix forward: backend 1.1 with APP_ENV	fix/backend-1.1-app-env	MERGED	2026-11-15T05:38:55Z
+4	Revert "Release backend 1.1"	revert/backend-1.1	MERGED	2026-11-15T05:29:57Z
+3	Release backend 1.1	release/backend-1.1	MERGED	2026-11-15T05:26:51Z
+2	Promote staging to v1.1.0	promote/staging-v1.1.0	MERGED	2026-11-15T05:25:00Z
+1	Release frontend 1.1	release/frontend-1.1	MERGED	2026-11-15T05:22:39Z
+$ git log --oneline --graph --decorate -n 15
+* 79057c5 (HEAD -> main, origin/main, origin/HEAD) Promote staging to v1.2.0 (backend 1.1 with APP_ENV) (#6)
+* bfb7dec (tag: v1.2.0) Fix forward: backend 1.1 with APP_ENV set per environment (values only, C2) (#5)
+* b89cca0 Revert "Release backend 1.1 (dev and staging values) (#3)" (#4)
+* 9dc39a1 Release backend 1.1 (dev and staging values) (#3)
+* 694e81d Promote staging to v1.1.0 (frontend 1.1) (#2)
+* ab2131e (tag: v1.1.0) Release frontend 1.1 (dev and staging values) (#1)
+* 0980e3d Task 6: show ReplicaSets and Pods in dso202 resource trees so permitted log access is usable
+* 574ac74 Task 6: grant reviewer read access to logs in dso202 (Argo CD 3.x separate logs resource)
+* 2167a8a Task 5: add tasktracker-dev (main, automated) and tasktracker-staging (v1.0.0, manual) Applications
+* ebed13c (tag: v1.0.0) Task 5: add PostSync smoke-test Job to the chart (Listing 13, backend Service tasktracker-backend)
+* 7039d19 Task 4: deliver dev and staging platform layer through platform-* Applications (wave -1)
+* 4bf17a3 Task 4: add sealed credentials for dev and staging (kubeseal, strict scope)
+* 2c9a6f1 Task 4: install Sealed Secrets controller (chart 2.20.0) through the root Application
+* dd39fa2 Task 3: add platform AppProject, root Application and dso202 workload project
+* ba20be6 Task 2: add pinned Argo CD v3.5.6 bootstrap (Kustomize, argocd-cm and rbac patches)
+$ git ls-remote --tags origin | grep -v "\^{}"
+6d3aa2c735764917ee907e6f929546497dd74706	refs/tags/v1.0.0
+55a7dda693534dcdeb277c240d25c476b9223bfc	refs/tags/v1.1.0
+6a48b4b76bdfb561b990c2687b23689c6a658218	refs/tags/v1.2.0

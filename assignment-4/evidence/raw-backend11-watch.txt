@@ -1,0 +1,25 @@
+NAME                                    READY   STATUS      RESTARTS   AGE
+tasktracker-backend-f79494d5f-mvjw5     1/1     Running     0          17m
+tasktracker-db-0                        1/1     Running     0          18m
+tasktracker-frontend-66cd7444d7-ccr9g   1/1     Running     0          3m17s
+tasktracker-smoke-test-kh58s            0/1     Completed   0          3m3s
+tasktracker-backend-5d47988c68-q2p98    0/1     Pending     0          0s
+tasktracker-backend-5d47988c68-q2p98    0/1     Pending     0          0s
+tasktracker-backend-5d47988c68-q2p98    0/1     ContainerCreating   0          0s
+tasktracker-backend-5d47988c68-q2p98    0/1     ContainerCreating   0          1s
+tasktracker-backend-5d47988c68-q2p98    0/1     Running             0          1s
+tasktracker-backend-5d47988c68-q2p98    0/1     Error               0          12s
+tasktracker-backend-5d47988c68-q2p98    0/1     Running             1 (2s ago)   13s
+tasktracker-backend-5d47988c68-q2p98    0/1     Error               1 (10s ago)   21s
+tasktracker-backend-5d47988c68-q2p98    0/1     CrashLoopBackOff    1 (12s ago)   33s
+tasktracker-backend-5d47988c68-q2p98    0/1     Running             2 (13s ago)   34s
+tasktracker-backend-5d47988c68-q2p98    0/1     Error               2 (24s ago)   45s
+tasktracker-backend-5d47988c68-q2p98    0/1     CrashLoopBackOff    2 (23s ago)   67s
+tasktracker-backend-5d47988c68-q2p98    0/1     Running             3 (23s ago)   67s
+tasktracker-backend-5d47988c68-q2p98    0/1     Error               3 (33s ago)   77s
+tasktracker-backend-5d47988c68-q2p98    0/1     CrashLoopBackOff    3 (55s ago)   2m11s
+tasktracker-backend-5d47988c68-q2p98    0/1     Running             4 (55s ago)   2m11s
+tasktracker-backend-5d47988c68-q2p98    0/1     Error               4 (65s ago)   2m21s
+tasktracker-backend-5d47988c68-q2p98    0/1     CrashLoopBackOff    4 (74s ago)   3m34s
+tasktracker-backend-5d47988c68-q2p98    0/1     Running             5 (83s ago)   3m43s
+tasktracker-backend-5d47988c68-q2p98    0/1     Error               5 (94s ago)   3m54s

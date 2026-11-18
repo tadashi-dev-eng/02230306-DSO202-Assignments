@@ -1,0 +1,23 @@
+$ argocd account list
+NAME      ENABLED  CAPABILITIES
+admin     true     login
+reviewer  true     login
+$ argocd account update-password --account reviewer --current-password "$(cat ../dso202-keys/argocd-admin-initial.txt)" --new-password "$(cat ../dso202-keys/argocd-reviewer-password.txt)"
+Password updated
+$ argocd login localhost:8443 --username reviewer --password "$(cat ../dso202-keys/argocd-reviewer-password.txt)" --insecure --name reviewer
+'reviewer:login' logged in successfully
+Context 'reviewer' updated
+$ argocd --argocd-context reviewer app list
+NAME                        CLUSTER                         NAMESPACE       PROJECT  STATUS  HEALTH   SYNCPOLICY  CONDITIONS  REPO                                                  PATH                TARGET
+argocd/tasktracker-dev      https://kubernetes.default.svc  dso202-dev      dso202   Synced  Healthy  Auto-Prune  <none>      https://github.com/tadashi-dev-eng/dso202-gitops.git  charts/tasktracker  main
+argocd/tasktracker-staging  https://kubernetes.default.svc  dso202-staging  dso202   Synced  Healthy  Manual      <none>      https://github.com/tadashi-dev-eng/dso202-gitops.git  charts/tasktracker  v1.0.0
+$ argocd --argocd-context reviewer account can-i get applications 'dso202/tasktracker-dev'
+yes
+$ argocd --argocd-context reviewer account can-i sync applications 'dso202/tasktracker-dev'
+no
+$ argocd --argocd-context reviewer account can-i get logs 'dso202/tasktracker-dev'
+no
+$ argocd --argocd-context reviewer proj get platform
+{"level":"fatal","msg":"rpc error: code = PermissionDenied desc = permission denied: projects, get, platform, sub: reviewer, iat: 2026-11-15T05:15:28Z","time":"2026-11-15T11:15:30+06:00"}
+$ argocd --argocd-context reviewer app sync tasktracker-dev
+{"level":"fatal","msg":"rpc error: code = PermissionDenied desc = permission denied: applications, sync, dso202/tasktracker-dev, sub: reviewer, iat: 2026-11-15T05:15:28Z","time":"2026-11-15T11:15:30+06:00"}
